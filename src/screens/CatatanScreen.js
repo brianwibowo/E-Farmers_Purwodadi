@@ -191,13 +191,20 @@ export const CatatanScreen = () => {
 
   const tourSteps = [
     {
-      title: 'Filter & Laporan Kas',
-      description: 'Gunakan kartu ini untuk memantau ringkasan total untung, pendapatan, dan pengeluaran. Anda juga dapat menyaring periode bulan dan kategori pengeluaran di sini.',
+      title: 'Laporan Ringkasan Kas',
+      description: 'Gunakan kartu ini untuk memantau ringkasan total untung, pendapatan, dan pengeluaran pertanian Anda secara cepat.',
       ref: filterCardRef,
+      popoverPosition: 'bottom', // Force position to safe lower screen area
+    },
+    {
+      title: 'Penyaringan Periode & Kategori',
+      description: 'Ketuk nama bulan di tengah untuk memilih bulan custom, atau gunakan tombol panah kiri-kanan untuk bergeser bulan. Ketuk tombol filter (corong di kanan) untuk menyaring pengeluaran berdasarkan kategori tertentu (misalnya: pupuk, benih, dll).',
+      ref: periodFilterRef,
+      popoverPosition: 'bottom', // Force position to safe lower screen area
     },
     {
       title: 'Pencarian Transaksi',
-      description: 'Ketuk ikon pencarian ini untuk menyaring pengeluaran secara cepat berdasarkan nama atau kategori secara real-time.',
+      description: 'Ketuk ikon pencarian ini untuk menyaring pengeluaran secara cepat berdasarkan nama transaksi secara real-time.',
       ref: searchToggleRef,
     },
     {
@@ -585,7 +592,7 @@ export const CatatanScreen = () => {
     <View ref={filterCardRef} style={styles.cardContainer}>
       <View style={styles.combinedFilterCard}>
         {/* Top Section: Period Control Selector and Tune/Reset Button */}
-        <View style={styles.cardHeader}>
+        <View ref={periodFilterRef} style={styles.cardHeader}>
           {/* Left Icon Badge (Search Toggle) */}
           <Pressable 
             ref={searchToggleRef}
@@ -602,8 +609,6 @@ export const CatatanScreen = () => {
               color={isSearchVisible ? theme.colors.onSecondaryContainer : theme.colors.primary} 
             />
           </Pressable>
-
-          {/* Center: Period Selector (Arrow Left, Label, Arrow Right) */}
           <View style={styles.periodSelectorContainer}>
             <Pressable 
               onPress={handlePrevPeriod} 

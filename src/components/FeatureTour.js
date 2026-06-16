@@ -70,22 +70,43 @@ export const FeatureTour = ({ visible, steps, onFinish, onClose }) => {
     }
   };
 
-  // Determine popover position based on target height
+  // Determine popover position based on target height, available space, or custom override
   let popoverStyle = {};
   if (layout) {
-    const isBottomHalf = layout.y > screenHeight / 2;
-    if (isBottomHalf) {
-      // Place above target
+    if (activeStep.popoverPosition === 'top') {
       popoverStyle = {
-        bottom: screenHeight - layout.y + 12,
-        left: Math.max(16, Math.min(screenWidth - 304, layout.x + (layout.width / 2) - 144)),
+        top: 120,
+        left: (screenWidth - 288) / 2, // Centered horizontally
+      };
+    } else if (activeStep.popoverPosition === 'bottom') {
+      popoverStyle = {
+        bottom: 150,
+        left: (screenWidth - 288) / 2, // Centered horizontally
+      };
+    } else if (activeStep.popoverPosition === 'center') {
+      popoverStyle = {
+        top: screenHeight / 2 - 100,
+        left: (screenWidth - 288) / 2,
       };
     } else {
-      // Place below target
-      popoverStyle = {
-        top: layout.y + layout.height + 12,
-        left: Math.max(16, Math.min(screenWidth - 304, layout.x + (layout.width / 2) - 144)),
-      };
+      // Automatic positioning
+      const spaceAbove = layout.y;
+      const spaceBelow = screenHeight - (layout.y + layout.height);
+      const placeAbove = spaceAbove > spaceBelow;
+
+      if (placeAbove) {
+        // Place above target
+        popoverStyle = {
+          bottom: Math.min(screenHeight - 80, screenHeight - layout.y + 12),
+          left: Math.max(16, Math.min(screenWidth - 304, layout.x + (layout.width / 2) - 144)),
+        };
+      } else {
+        // Place below target
+        popoverStyle = {
+          top: Math.min(screenHeight - 220, layout.y + layout.height + 12),
+          left: Math.max(16, Math.min(screenWidth - 304, layout.x + (layout.width / 2) - 144)),
+        };
+      }
     }
   } else {
     // Center of screen fallback

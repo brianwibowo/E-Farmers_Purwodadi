@@ -91,6 +91,7 @@ export const BerandaScreen = () => {
       title: 'Ringkasan Kas & Analisis Margin',
       description: 'Di sini Anda dapat memantau total pengeluaran, estimasi pendapatan, serta sisa untung/rugi bulan ini. Lingkaran di bawah juga menganalisis persentase margin keuntungan Anda secara visual.',
       ref: insightRef,
+      popoverPosition: 'bottom', // Force position to safe lower-middle screen area
       onBeforeShow: () => {
         scrollRef.current?.scrollTo({ y: 0, animated: true });
       }
@@ -100,7 +101,7 @@ export const BerandaScreen = () => {
       description: 'Gunakan kalkulator pertanian ini untuk memperkirakan pendapatan kotor Anda sebelum menyimpannya ke dalam sistem.',
       ref: calculatorRef,
       onBeforeShow: () => {
-        scrollRef.current?.scrollToEnd({ animated: true });
+        scrollRef.current?.scrollTo({ y: 220, animated: true });
       }
     },
   ];
