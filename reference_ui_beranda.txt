@@ -1,0 +1,238 @@
+<!DOCTYPE html><html lang="id"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>E-Farmers - Beranda</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "tertiary-container": "#387b41",
+                        "on-primary-container": "#cbffc2",
+                        "surface": "#f5fced",
+                        "on-secondary-fixed-variant": "#0c5216",
+                        "surface-bright": "#f5fced",
+                        "secondary-fixed-dim": "#91d78a",
+                        "error-container": "#ffdad6",
+                        "on-surface": "#171d14",
+                        "on-background": "#171d14",
+                        "surface-container-high": "#e3ebdc",
+                        "primary-fixed": "#a3f69c",
+                        "on-tertiary-fixed-variant": "#07521d",
+                        "secondary-container": "#acf4a4",
+                        "on-tertiary-container": "#c7ffc5",
+                        "outline-variant": "#bfcaba",
+                        "on-surface-variant": "#40493d",
+                        "on-secondary": "#ffffff",
+                        "primary": "#0d631b",
+                        "secondary-fixed": "#acf4a4",
+                        "background": "#f5fced",
+                        "on-primary-fixed": "#002204",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-container": "#e9f0e1",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#88d982",
+                        "inverse-surface": "#2c3228",
+                        "error": "#ba1a1a",
+                        "on-error-container": "#93000a",
+                        "surface-variant": "#dee5d6",
+                        "primary-container": "#2e7d32",
+                        "on-primary-fixed-variant": "#005312",
+                        "tertiary": "#1d622b",
+                        "on-tertiary-fixed": "#002107",
+                        "on-primary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#dee5d6",
+                        "inverse-on-surface": "#ecf3e4",
+                        "secondary": "#2a6b2c",
+                        "on-secondary-fixed": "#002203",
+                        "surface-dim": "#d5dcce",
+                        "tertiary-fixed": "#abf4ac",
+                        "primary-fixed-dim": "#88d982",
+                        "outline": "#707a6c",
+                        "on-secondary-container": "#307231",
+                        "surface-container-low": "#eff6e7",
+                        "surface-tint": "#1b6d24",
+                        "tertiary-fixed-dim": "#90d792"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "container-padding": "24px",
+                        "unit": "8px",
+                        "stack-gap": "16px",
+                        "section-gap": "32px",
+                        "touch-target-min": "56px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Inter"],
+                        "headline-lg-mobile": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-lg": ["Inter"],
+                        "headline-md": ["Inter"],
+                        "body-md": ["Inter"],
+                        "button-text": ["Inter"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "body-lg": ["20px", {"lineHeight": "30px", "fontWeight": "400"}],
+                        "label-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "body-md": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "button-text": ["18px", {"lineHeight": "24px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5fced; /* surface from theme */
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .card-shadow {
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col text-on-surface">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky z-50 bg-surface-container-low flex justify-between items-center px-container-padding h-[64px]">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-[32px]">agriculture</span>
+<h1 class="font-headline-md text-headline-md-mobile md:text-headline-md font-bold text-primary">E-Farmers</h1>
+</div>
+<button class="hover:opacity-80 transition-opacity active:scale-95 duration-150 p-2">
+<span class="material-symbols-outlined text-primary text-[28px]">groups</span>
+</button>
+</header>
+<main class="flex-grow px-container-padding py-section-gap max-w-2xl mx-auto w-full">
+<!-- Summary Section: Bento-ish Grid -->
+<section class="grid grid-cols-2 gap-stack-gap mb-section-gap">
+<!-- Total Pengeluaran -->
+<div class="col-span-2 bg-surface-container border border-outline-variant p-container-padding rounded-xl card-shadow" style="transform: scale(1);">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">payments</span>
+<span class="font-label-lg text-label-lg text-on-surface-variant">Total Pengeluaran</span>
+</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-primary">Rp 4.500.000</div>
+</div>
+<!-- Estimasi Pendapatan -->
+<div class="bg-surface-container border border-outline-variant p-container-padding rounded-xl card-shadow">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary">trending_up</span>
+<span class="font-label-lg text-label-lg text-on-surface-variant">Est. Pendapatan</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface">Rp 8.200.000</div>
+</div>
+<!-- Estimasi Untung/Rugi -->
+<div class="bg-surface-container border border-outline-variant p-container-padding rounded-xl card-shadow" style="transform: scale(1);">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-tertiary">account_balance_wallet</span>
+<span class="font-label-lg text-label-lg text-on-surface-variant">Est. Untung</span>
+</div>
+<div class="font-headline-md text-headline-md text-primary">Rp 3.700.000</div>
+</div>
+<!-- Persentase Keuntungan -->
+<div class="col-span-2 bg-secondary-container p-container-padding rounded-xl card-shadow flex items-center justify-between">
+<div>
+<span class="font-label-lg text-label-lg text-on-secondary-container block">Persentase Keuntungan</span>
+<span class="font-headline-lg-mobile text-headline-lg-mobile text-on-secondary-container">82.2%</span>
+</div>
+<span class="material-symbols-outlined text-[48px] text-on-secondary-container" style="font-variation-settings: &quot;FILL&quot; 1;">analytics</span>
+</div>
+</section>
+<!-- Calculation Section -->
+<section class="bg-surface-container-lowest border border-outline-variant p-container-padding rounded-xl mb-section-gap card-shadow" style="transform: scale(1);">
+<h2 class="font-headline-md text-headline-md text-primary mb-stack-gap">Kalkulator Panen</h2>
+<div class="space-y-stack-gap">
+<div>
+<label class="block font-label-lg text-label-lg text-on-surface mb-2 font-bold" for="harvest">Estimasi Hasil Panen (Kg)</label>
+<input class="w-full h-touch-target-min px-4 border-2 border-outline-variant rounded-lg focus:border-primary focus:ring-0 text-body-lg font-body-lg" id="harvest" placeholder="0" type="number">
+</div>
+<div>
+<label class="block font-label-lg text-label-lg text-on-surface mb-2 font-bold" for="price">Harga Jual per Kg (Rp)</label>
+<input class="w-full h-touch-target-min px-4 border-2 border-outline-variant rounded-lg focus:border-primary focus:ring-0 text-body-lg font-body-lg" id="price" placeholder="0" type="number">
+</div>
+<button class="w-full h-touch-target-min bg-primary text-on-primary rounded-xl font-button-text text-button-text active:scale-95 transition-transform duration-150 flex items-center justify-center gap-2" onclick="calculate()">
+<span class="material-symbols-outlined">calculate</span>
+                    Hitung
+                </button>
+<div class="hidden mt-4 p-4 bg-surface-container rounded-lg border-l-4 border-primary" id="result-display">
+<div class="text-label-lg font-label-lg text-on-surface-variant">Hasil Perhitungan</div>
+<div class="text-headline-md font-headline-md text-primary" id="result-value">Rp 0</div>
+</div>
+</div>
+</section>
+<!-- Main Action Button -->
+<section class="mb-section-gap">
+
+</section>
+<!-- Visual Anchor: Field Illustration -->
+<div class="w-full h-48 rounded-2xl overflow-hidden relative mb-section-gap">
+<img class="w-full h-full object-cover grayscale-[0.2]" data-alt="A lush, vibrant green rice terrace landscape in rural Indonesia under a bright morning sun. The sky is clear blue with soft white clouds, reflecting a peaceful and prosperous farming atmosphere. The lighting is high-key and optimistic, perfectly matching a clean modern corporate agricultural UI design focused on growth and stability." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqnLMNALCELQkB3duPuXGXe0PZ7jrr2JImMFSkSGjuG_1dOyhx55oy_lk74zVNLaQJwQhkjcAkOF-UNB3usiE_UV_sM1lAg_HQ7JEwVIutBPsWfxEJvLvZ0zQFEGjTUspu6WBGllu53Ve0W3liItmWOX3wuM_UlwrfdeeHJ_PlCuW1KPjBQoFAfwkKFRzGJpGW2yzsOSx8IaKm0eiRUReaR3wM3rmfSi9kicWjQN5IyYRBabeivlRwydyxGicJVfw3UoyVVFAfLBdP">
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent flex items-end p-6">
+<p class="text-white font-label-lg text-label-lg">Pantau terus perkembangan lahan Anda bersama E-Farmers.</p>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full flex justify-center items-center py-section-gap px-container-padding text-center opacity-70 mb-[100px]">
+<div class="font-label-lg text-label-lg text-on-surface-variant">
+            Pengembang: Tim Pengabdian DPPM BIMA KEMDIKTISAINTEK UNNES 2026
+        </div>
+</footer>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full h-[80px] bg-surface-container dark:bg-surface-container-highest flex justify-around items-center px-container-padding pb-safe z-50">
+<a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-xl px-6 py-2 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: &quot;FILL&quot; 1;">home</span>
+<span class="font-label-lg text-label-lg">Beranda</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-6 py-2 hover:bg-surface-variant/10 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-lg text-label-lg">Catatan</span>
+</a>
+</nav>
+<script>
+        function calculate() {
+            const harvest = document.getElementById('harvest').value;
+            const price = document.getElementById('price').value;
+            const resultDisplay = document.getElementById('result-display');
+            const resultValue = document.getElementById('result-value');
+
+            if (harvest && price) {
+                const total = harvest * price;
+                resultValue.innerText = 'Rp ' + new Intl.NumberFormat('id-ID').format(total);
+                resultDisplay.classList.remove('hidden');
+                
+                // Add a small bounce effect
+                resultDisplay.classList.add('animate-bounce');
+                setTimeout(() => resultDisplay.classList.remove('animate-bounce'), 1000);
+            } else {
+                alert('Mohon masukkan jumlah panen dan harga jual.');
+            }
+        }
+
+        // Ripple-like interaction for summary cards
+        document.querySelectorAll('.card-shadow').forEach(card => {
+            card.addEventListener('mousedown', () => card.style.transform = 'scale(0.98)');
+            card.addEventListener('mouseup', () => card.style.transform = 'scale(1)');
+            card.addEventListener('mouseleave', () => card.style.transform = 'scale(1)');
+        });
+    </script>
+
+
+</body></html>

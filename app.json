@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "E-Farmers",
+    "slug": "e-farmers-purwodadi",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/logo.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#012d1d"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.efarmers.purwodadi"
+    },
+    "android": {
+      "package": "com.efarmers.purwodadi",
+      "adaptiveIcon": {
+        "backgroundColor": "#012d1d",
+        "foregroundImage": "./assets/logo.png"
+      }
+    },
+    "web": {
+      "favicon": "./assets/logo.png"
+    },
+    "plugins": [
+      "expo-font"
+    ]
+  }
+}

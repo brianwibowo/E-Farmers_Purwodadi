@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+
+<html class="light" lang="id">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Catatan Pengeluaran - E-Farmers (FEB)</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700;800&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <!-- Tailwind Configuration -->
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-error-container": "#93000a",
+                        "error": "#ba1a1a",
+                        "secondary-container": "#a0f4c8",
+                        "tertiary-container": "#1a432e",
+                        "tertiary": "#002d1a",
+                        "on-surface": "#191c1d",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#e1e3e4",
+                        "primary-fixed-dim": "#a5d0b9",
+                        "on-tertiary-fixed-variant": "#264f39",
+                        "surface-bright": "#f8f9fa",
+                        "inverse-primary": "#a5d0b9",
+                        "on-tertiary-fixed": "#002112",
+                        "secondary-fixed-dim": "#85d7ad",
+                        "on-secondary-fixed-variant": "#005236",
+                        "tertiary-fixed-dim": "#a4d1b4",
+                        "on-tertiary-container": "#84b095",
+                        "surface-container-high": "#e7e8e9",
+                        "on-primary-container": "#86af99",
+                        "secondary-fixed": "#a0f4c8",
+                        "outline": "#717973",
+                        "tertiary-fixed": "#c0edd0",
+                        "inverse-on-surface": "#f0f1f2",
+                        "on-tertiary": "#ffffff",
+                        "secondary": "#0e6c4a",
+                        "primary-fixed": "#c1ecd4",
+                        "on-background": "#191c1d",
+                        "surface-dim": "#d9dadb",
+                        "background": "#f8f9fa",
+                        "primary": "#012d1d",
+                        "surface": "#f8f9fa",
+                        "error-container": "#ffdad6",
+                        "surface-container": "#edeeef",
+                        "primary-container": "#1b4332",
+                        "on-surface-variant": "#414844",
+                        "surface-container-low": "#f3f4f5",
+                        "on-secondary-container": "#19724f",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-tint": "#3f6653",
+                        "inverse-surface": "#2e3132",
+                        "outline-variant": "#c1c8c2",
+                        "surface-variant": "#e1e3e4",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#002114",
+                        "on-secondary-fixed": "#002113",
+                        "on-primary-fixed-variant": "#274e3d"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "16px",
+                        "stack-space": "24px",
+                        "touch-target-min": "56px",
+                        "margin-mobile": "20px",
+                        "container-padding": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Public Sans"],
+                        "headline-lg-mobile": ["Public Sans"],
+                        "button-text": ["Public Sans"],
+                        "headline-lg": ["Public Sans"],
+                        "label-lg": ["Public Sans"],
+                        "body-md": ["Public Sans"],
+                        "headline-md": ["Public Sans"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["20px", { "lineHeight": "30px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["26px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "button-text": ["20px", { "lineHeight": "24px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-lg": ["16px", { "lineHeight": "24px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "600" }]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Public Sans', sans-serif;
+            background-color: #f8f9fa;
+            /* surface color */
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+            vertical-align: middle;
+        }
+
+        .list-item-hover:active {
+            transform: scale(0.98);
+            background-color: #f3f4f5;
+        }
+    </style>
+    <style>
+        body {
+            min-height: max(884px, 100dvh);
+        }
+    </style>
+</head>
+
+<body class="text-on-background min-h-screen flex flex-col">
+    <!-- TopAppBar -->
+    <header
+        class="bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container docked full-width top-0 z-50">
+        <div class="flex justify-between items-center w-full px-margin-mobile h-touch-target-min">
+            <div class="flex items-center gap-4">
+                <span class="material-symbols-outlined" data-icon="agriculture">agriculture</span>
+                <h1 class="text-headline-md font-headline-md font-bold text-on-primary dark:text-on-primary-container">
+                    E-Farmers (FEB)</h1>
+            </div>
+            <div class="flex items-center">
+                <button
+                    class="w-12 h-12 flex items-center justify-center hover:bg-primary-container/20 rounded-full transition-transform active:scale-95">
+                    <span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+                </button>
+            </div>
+        </div>
+    </header>
+    <main class="flex-grow pt-8 pb-32 px-margin-mobile max-w-4xl mx-auto w-full">
+        <!-- Page Header & Summary Card -->
+        <section class="mb-stack-space">
+            <h2 class="font-headline-lg-mobile text-headline-lg-mobile mb-4">Catatan Pengeluaran</h2>
+            <!-- Total Summary Card -->
+            <div class="bg-surface-container-lowest border border-outline-variant p-6 rounded-xl">
+                <p class="font-label-lg text-label-lg text-on-surface-variant mb-1 uppercase tracking-wider">Total
+                    Pengeluaran Bulan Ini</p>
+                <h3 class="font-headline-lg text-headline-lg text-primary">Rp 1.750.000</h3>
+                <div class="mt-4 flex gap-2">
+                    <span
+                        class="inline-flex items-center px-3 py-1 bg-secondary-container text-on-secondary-container rounded-full text-sm font-bold">
+                        <span class="material-symbols-outlined text-sm mr-1" data-icon="trending_up">trending_up</span>
+                        8% vs Bulan Lalu
+                    </span>
+                </div>
+            </div>
+        </section>
+        <!-- Search & Filter (Desktop/Large UI Pattern) -->
+        <div class="flex flex-col md:flex-row gap-4 mb-stack-space">
+            <div class="relative flex-grow">
+                <span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant"
+                    data-icon="search">search</span>
+                <input
+                    class="w-full h-touch-target-min pl-12 pr-4 bg-surface border border-outline rounded-lg focus:border-primary focus:ring-2 focus:ring-primary-fixed text-body-md font-body-md"
+                    placeholder="Cari nama pengeluaran..." type="text" />
+            </div>
+            <button
+                class="h-touch-target-min px-6 bg-surface-container border border-outline-variant rounded-lg flex items-center justify-center gap-2 font-label-lg text-label-lg hover:bg-surface-container-high transition-colors">
+                <span class="material-symbols-outlined" data-icon="filter_list">filter_list</span>
+                Filter
+            </button>
+        </div>
+        <!-- Ledger List -->
+        <div class="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden shadow-sm">
+            <!-- Header (Visible on Desktop, but kept minimal for accessibility) -->
+            <div
+                class="hidden md:grid grid-cols-12 gap-4 px-6 py-4 bg-surface-container text-on-surface-variant font-label-lg border-b border-outline-variant">
+                <div class="col-span-3">Tanggal</div>
+                <div class="col-span-6">Nama Pengeluaran</div>
+                <div class="col-span-3 text-right">Nominal</div>
+            </div>
+            <!-- List Items -->
+            <div class="divide-y divide-outline-variant">
+                <!-- Item 1 -->
+                <div
+                    class="grid md:grid-cols-12 gap-4 px-6 py-5 list-item-hover transition-all cursor-pointer items-center min-h-[88px]">
+                    <div class="md:col-span-3 flex items-center gap-3">
+                        <div
+                            class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+                            <span class="material-symbols-outlined" data-icon="calendar_today">calendar_today</span>
+                        </div>
+                        <span class="font-body-md text-body-md md:hidden font-bold">12/02/2026</span>
+                        <span
+                            class="hidden md:block font-body-md text-body-md text-on-surface-variant">12/02/2026</span>
+                    </div>
+                    <div class="md:col-span-6">
+                        <p class="font-headline-md text-headline-md text-on-surface leading-tight">Pupuk NPK</p>
+                        <p class="md:hidden font-label-lg text-label-lg text-on-surface-variant mt-1">Kategori: Nutrisi
+                            Tanaman</p>
+                    </div>
+                    <div class="md:col-span-3 text-right">
+                        <span class="font-headline-md text-headline-md text-error">Rp 500.000</span>
+                    </div>
+                </div>
+                <!-- Item 2 -->
+                <div
+                    class="grid md:grid-cols-12 gap-4 px-6 py-5 list-item-hover transition-all cursor-pointer items-center min-h-[88px]">
+                    <div class="md:col-span-3 flex items-center gap-3">
+                        <div
+                            class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+                            <span class="material-symbols-outlined" data-icon="bug_report">bug_report</span>
+                        </div>
+                        <span class="font-body-md text-body-md md:hidden font-bold">15/02/2026</span>
+                        <span
+                            class="hidden md:block font-body-md text-body-md text-on-surface-variant">15/02/2026</span>
+                    </div>
+                    <div class="md:col-span-6">
+                        <p class="font-headline-md text-headline-md text-on-surface leading-tight">Pestisida</p>
+                        <p class="md:hidden font-label-lg text-label-lg text-on-surface-variant mt-1">Kategori:
+                            Pengendalian Hama</p>
+                    </div>
+                    <div class="md:col-span-3 text-right">
+                        <span class="font-headline-md text-headline-md text-error">Rp 250.000</span>
+                    </div>
+                </div>
+                <!-- Item 3 -->
+                <div
+                    class="grid md:grid-cols-12 gap-4 px-6 py-5 list-item-hover transition-all cursor-pointer items-center min-h-[88px]">
+                    <div class="md:col-span-3 flex items-center gap-3">
+                        <div
+                            class="w-12 h-12 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+                            <span class="material-symbols-outlined" data-icon="agriculture">agriculture</span>
+                        </div>
+                        <span class="font-body-md text-body-md md:hidden font-bold">18/02/2026</span>
+                        <span
+                            class="hidden md:block font-body-md text-body-md text-on-surface-variant">18/02/2026</span>
+                    </div>
+                    <div class="md:col-span-6">
+                        <p class="font-headline-md text-headline-md text-on-surface leading-tight">Sewa Traktor</p>
+                        <p class="md:hidden font-label-lg text-label-lg text-on-surface-variant mt-1">Kategori: Alat
+                            &amp; Mesin</p>
+                    </div>
+                    <div class="md:col-span-3 text-right">
+                        <span class="font-headline-md text-headline-md text-error">Rp 1.000.000</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Desktop Action Area -->
+        <div class="hidden md:flex justify-end mt-stack-space">
+            <button
+                class="h-touch-target-min px-8 bg-primary text-on-primary rounded-full font-button-text text-button-text flex items-center gap-3 hover:bg-primary-container transition-all shadow-lg active:scale-95">
+                <span class="material-symbols-outlined" data-icon="add">add</span>
+                Tambah Pengeluaran
+            </button>
+        </div>
+    </main>
+    <!-- FAB for Mobile -->
+    <button
+        class="md:hidden fixed bottom-24 right-6 w-16 h-16 bg-primary text-on-primary rounded-full flex items-center justify-center shadow-xl z-50 active:scale-95 transition-all">
+        <span class="material-symbols-outlined text-[32px]" data-icon="add">add</span>
+    </button>
+    <!-- BottomNavBar -->
+    <nav
+        class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 bg-surface dark:bg-surface-container-lowest rounded-t-xl border-t border-outline-variant">
+        <a class="flex flex-col items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-all p-2 rounded-lg"
+            href="#">
+            <span class="material-symbols-outlined" data-icon="home">home</span>
+            <span class="text-label-lg font-label-lg">Beranda</span>
+        </a>
+        <a class="flex flex-col items-center justify-center bg-secondary-container text-on-secondary-container rounded-full px-6 py-2 transition-all duration-200 active:scale-95"
+            href="#">
+            <span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+            <span class="text-label-lg font-label-lg">Catatan</span>
+        </a>
+    </nav>
+    <!-- Footer -->
+    <footer
+        class="w-full py-stack-space px-margin-mobile text-center mb-24 bg-surface-dim dark:bg-surface-container text-on-surface-variant font-label-lg text-label-lg">
+        Tim Pengabdian DPPM BIMA KEMDIKTISAINTEK UNNES 2026
+    </footer>
+    <script>
+        // Micro-interaction: Tapping a list item highlights it
+        document.querySelectorAll('.list-item-hover').forEach(item => {
+            item.addEventListener('click', () => {
+                item.classList.add('bg-secondary-container/20');
+                setTimeout(() => {
+                    item.classList.remove('bg-secondary-container/20');
+                }, 300);
+            });
+        });
+    </script>
+</body>
+
+</html>
