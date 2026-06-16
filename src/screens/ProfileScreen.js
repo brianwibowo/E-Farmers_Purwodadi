@@ -18,6 +18,7 @@ import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useAuth } from '../utils/AuthContext';
 import { theme } from '../theme';
 import InputField from '../components/InputField';
+import { exportBackup, importBackup } from '../utils/backup';
 
 export const ProfileScreen = ({ navigation }) => {
   const { user, updateProfile, logout } = useAuth();
@@ -38,6 +39,8 @@ export const ProfileScreen = ({ navigation }) => {
   
   const [loading, setLoading] = useState(false);
   const [imageModalVisible, setImageModalVisible] = useState(false);
+  const [backupLoading, setBackupLoading] = useState(false);
+  const [restoreLoading, setRestoreLoading] = useState(false);
 
   const handlePickImage = async () => {
     try {
@@ -185,6 +188,77 @@ export const ProfileScreen = ({ navigation }) => {
     }
   };
 
+  const handleExportBackup = async () => {
+    setBackupLoading(true);
+    try {
+      const result = await exportBackup(user?.username);
+      if (Platform.OS === 'web') {
+        alert(result.message);
+      } else {
+        Alert.alert(
+          result.success ? 'Berhasil' : 'Gagal',
+          result.message,
+          [{ text: 'OK' }]
+        );
+      }
+    } catch (err) {
+      const msg = 'Terjadi kesalahan saat membuat backup.';
+      if (Platform.OS === 'web') {
+        alert(msg);
+      } else {
+        Alert.alert('Gagal', msg);
+      }
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
+  const handleImportBackup = () => {
+    const doImport = async () => {
+      setRestoreLoading(true);
+      try {
+        const result = await importBackup();
+        if (result.message === 'Dibatalkan.') {
+          setRestoreLoading(false);
+          return;
+        }
+        if (Platform.OS === 'web') {
+          alert(result.message);
+        } else {
+          Alert.alert(
+            result.success ? 'Berhasil' : 'Gagal',
+            result.message,
+            [{ text: 'OK' }]
+          );
+        }
+      } catch (err) {
+        const msg = 'Terjadi kesalahan saat restore backup.';
+        if (Platform.OS === 'web') {
+          alert(msg);
+        } else {
+          Alert.alert('Gagal', msg);
+        }
+      } finally {
+        setRestoreLoading(false);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Data dari file backup akan digabungkan dengan data yang sudah ada. Lanjutkan?')) {
+        doImport();
+      }
+    } else {
+      Alert.alert(
+        'Pulihkan Data',
+        'Data dari file backup akan digabungkan dengan data yang ada sekarang. Data yang sudah ada tidak akan dobel.\n\nLanjutkan?',
+        [
+          { text: 'Batal', style: 'cancel' },
+          { text: 'Pulihkan', onPress: doImport },
+        ]
+      );
+    }
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -319,6 +393,72 @@ export const ProfileScreen = ({ navigation }) => {
           >
             <MaterialIcons name="logout" size={24} color={theme.colors.error} />
             <Text style={styles.logoutButtonText}>Keluar Akun</Text>
+          </Pressable>
+        </View>
+
+        {/* Backup & Restore Section */}
+        <View style={styles.backupCard}>
+          <View style={styles.backupHeader}>
+            <View style={styles.backupIconWrapper}>
+              <MaterialIcons name="cloud-upload" size={28} color={theme.colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.sectionTitle}>Cadangkan Data</Text>
+              <Text style={styles.backupDesc}>
+                Simpan salinan data ke file supaya tidak hilang. Berguna jika HP rusak atau ganti HP baru.
+              </Text>
+            </View>
+          </View>
+
+          <Pressable
+            onPress={handleExportBackup}
+            disabled={backupLoading}
+            style={({ pressed }) => [
+              styles.backupButton,
+              pressed && styles.backupButtonPressed,
+              backupLoading && styles.saveButtonDisabled,
+            ]}
+          >
+            {backupLoading ? (
+              <ActivityIndicator color={theme.colors.primary} />
+            ) : (
+              <>
+                <View style={styles.backupBtnIcon}>
+                  <MaterialIcons name="file-download" size={22} color={theme.colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.backupButtonText}>Simpan Cadangan</Text>
+                  <Text style={styles.backupButtonSub}>Unduh semua data ke file</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color={theme.colors.outline} />
+              </>
+            )}
+          </Pressable>
+
+          <Pressable
+            onPress={handleImportBackup}
+            disabled={restoreLoading}
+            style={({ pressed }) => [
+              styles.backupButton,
+              { borderBottomWidth: 0 },
+              pressed && styles.backupButtonPressed,
+              restoreLoading && styles.saveButtonDisabled,
+            ]}
+          >
+            {restoreLoading ? (
+              <ActivityIndicator color={theme.colors.secondary} />
+            ) : (
+              <>
+                <View style={[styles.backupBtnIcon, { backgroundColor: theme.colors.secondaryContainer }]}>
+                  <MaterialIcons name="file-upload" size={22} color={theme.colors.secondary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.backupButtonText}>Pulihkan Data</Text>
+                  <Text style={styles.backupButtonSub}>Masukkan data dari file cadangan</Text>
+                </View>
+                <MaterialIcons name="chevron-right" size={24} color={theme.colors.outline} />
+              </>
+            )}
           </Pressable>
         </View>
 
@@ -573,6 +713,73 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: theme.colors.error,
     marginLeft: 10,
+  },
+  // Backup Section
+  backupCard: {
+    backgroundColor: theme.colors.surfaceContainerLowest,
+    borderWidth: 1,
+    borderColor: theme.colors.outlineVariant,
+    borderRadius: theme.rounded.xl,
+    padding: 20,
+    marginTop: 24,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+  },
+  backupHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  backupIconWrapper: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: theme.colors.primaryContainer,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  backupDesc: {
+    fontFamily: 'PublicSans-Regular',
+    fontSize: 13,
+    color: theme.colors.onSurfaceVariant,
+    lineHeight: 18,
+    marginTop: 2,
+  },
+  backupButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.outlineVariant,
+  },
+  backupButtonPressed: {
+    backgroundColor: theme.colors.surfaceContainer,
+    borderRadius: theme.rounded.default,
+  },
+  backupBtnIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primaryContainer,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  backupButtonText: {
+    fontFamily: 'PublicSans-SemiBold',
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.onSurface,
+  },
+  backupButtonSub: {
+    fontFamily: 'PublicSans-Regular',
+    fontSize: 12,
+    color: theme.colors.onSurfaceVariant,
+    marginTop: 2,
   },
   footer: {
     alignItems: 'center',
