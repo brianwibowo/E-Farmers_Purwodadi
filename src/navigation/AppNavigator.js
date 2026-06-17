@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../utils/AuthContext';
 import { theme } from '../theme';
 
@@ -18,23 +17,7 @@ import OnboardingScreen from '../screens/OnboardingScreen';
 const Stack = createNativeStackNavigator();
 
 export const AppNavigator = () => {
-  const { user, loading } = useAuth();
-  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(null);
-  const [onboardingLoading, setOnboardingLoading] = useState(true);
-
-  useEffect(() => {
-    const checkOnboarding = async () => {
-      try {
-        const value = await AsyncStorage.getItem('HAS_SEEN_ONBOARDING');
-        setHasSeenOnboarding(value === 'true');
-      } catch (err) {
-        console.error('Failed to read onboarding status', err);
-      } finally {
-        setOnboardingLoading(false);
-      }
-    };
-    checkOnboarding();
-  }, []);
+  const { user, loading, hasSeenOnboarding, onboardingLoading } = useAuth();
 
   // Show a loading screen while session or onboarding status is being verified
   if (loading || onboardingLoading) {
@@ -59,7 +42,6 @@ export const AppNavigator = () => {
             <Stack.Screen 
               name="Onboarding" 
               component={OnboardingScreen} 
-              initialParams={{ onFinish: () => setHasSeenOnboarding(true) }}
             />
           )}
           <Stack.Screen name="Login" component={LoginScreen} />

@@ -28,6 +28,8 @@ export default function App() {
     const initApp = async () => {
       try {
         await seedInitialData();
+        // Beri jeda 2 detik agar splash screen logo sempat terlihat
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (err) {
         console.error('Failed to seed initial data', err);
       } finally {
@@ -46,7 +48,7 @@ export default function App() {
           style={styles.loadingLogo} 
           resizeMode="contain"
         />
-        <ActivityIndicator size="large" color="#ffffff" style={{ marginTop: 24 }} />
+        <ActivityIndicator size="large" color="#23752c" style={{ marginTop: 24 }} />
       </View>
     );
   }
@@ -66,12 +68,12 @@ export default function App() {
 const styles = StyleSheet.create({
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#012d1d', // Matches app.json splash screen background
+    backgroundColor: '#ffffff', // Menggunakan warna putih agar menyatu dengan logo.png
     justifyContent: 'center',
     alignItems: 'center',
   },
   loadingLogo: {
-    width: 140,
-    height: 140,
+    width: 240,
+    height: 240,
   },
 });

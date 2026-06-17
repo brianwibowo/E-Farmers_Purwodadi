@@ -19,6 +19,7 @@ import { useAuth } from '../utils/AuthContext';
 import { theme } from '../theme';
 import InputField from '../components/InputField';
 import { exportBackup, importBackup } from '../utils/backup';
+import { clearAllData } from '../utils/storage';
 
 export const ProfileScreen = ({ navigation }) => {
   const { user, updateProfile, logout } = useAuth();
@@ -183,6 +184,43 @@ export const ProfileScreen = ({ navigation }) => {
         [
           { text: 'Batal', style: 'cancel' },
           { text: 'Keluar', style: 'destructive', onPress: logout },
+        ]
+      );
+    }
+  };
+
+  const handleResetData = () => {
+    const performReset = async () => {
+      try {
+        await clearAllData();
+        const msg = 'Semua data kas dan estimasi panen berhasil dihapus secara permanen.';
+        if (Platform.OS === 'web') {
+          alert(msg);
+        } else {
+          Alert.alert('Berhasil', msg, [{ text: 'OK' }]);
+        }
+      } catch (err) {
+        const errorMsg = 'Gagal menghapus data.';
+        if (Platform.OS === 'web') {
+          alert(errorMsg);
+        } else {
+          Alert.alert('Gagal', errorMsg);
+        }
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      const confirmReset = window.confirm(
+        'HAPUS SEMUA DATA?\n\nTindakan ini akan menghapus semua catatan transaksi kas dan estimasi panen Anda secara permanen dan tidak dapat dibatalkan.'
+      );
+      if (confirmReset) performReset();
+    } else {
+      Alert.alert(
+        'Hapus Semua Data',
+        'Apakah Anda yakin ingin menghapus semua catatan kas dan estimasi panen secara permanen? Tindakan ini tidak dapat dibatalkan.',
+        [
+          { text: 'Batal', style: 'cancel' },
+          { text: 'Hapus Semua', style: 'destructive', onPress: performReset },
         ]
       );
     }
@@ -393,6 +431,17 @@ export const ProfileScreen = ({ navigation }) => {
           >
             <MaterialIcons name="logout" size={24} color={theme.colors.error} />
             <Text style={styles.logoutButtonText}>Keluar Akun</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={handleResetData}
+            style={({ pressed }) => [
+              styles.resetButton,
+              pressed && styles.resetButtonPressed
+            ]}
+          >
+            <MaterialIcons name="delete-forever" size={24} color={theme.colors.error} />
+            <Text style={styles.resetButtonText}>Hapus Semua Data</Text>
           </Pressable>
         </View>
 
@@ -708,6 +757,28 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   logoutButtonText: {
+    fontFamily: 'PublicSans-Bold',
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.error,
+    marginLeft: 10,
+  },
+  resetButton: {
+    flexDirection: 'row',
+    height: theme.spacing.touchTargetMin,
+    backgroundColor: 'transparent',
+    borderWidth: 2,
+    borderColor: theme.colors.error,
+    borderRadius: theme.rounded.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  resetButtonPressed: {
+    backgroundColor: theme.colors.errorContainer,
+    opacity: 0.9,
+  },
+  resetButtonText: {
     fontFamily: 'PublicSans-Bold',
     fontSize: 18,
     fontWeight: '700',

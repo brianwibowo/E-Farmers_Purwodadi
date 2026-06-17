@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as authUtil from './auth';
 
 const AuthContext = createContext(null);
@@ -6,8 +7,10 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState(null);
+  const [onboardingLoading, setOnboardingLoading] = useState(true);
 
-  // Load active session from AsyncStorage when provider mounts
+  // Load active session and onboarding status from AsyncStorage when provider mounts
   useEffect(() => {
     const checkActiveSession = async () => {
       try {
@@ -21,7 +24,20 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
       }
     };
+
+    const checkOnboarding = async () => {
+      try {
+        const value = await AsyncStorage.getItem('HAS_SEEN_ONBOARDING');
+        setHasSeenOnboarding(value === 'true');
+      } catch (err) {
+        console.error('Failed to read onboarding status', err);
+      } finally {
+        setOnboardingLoading(false);
+      }
+    };
+
     checkActiveSession();
+    checkOnboarding();
   }, []);
 
   const login = async (username, password) => {
@@ -69,6 +85,15 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const completeOnboarding = async () => {
+    try {
+      await AsyncStorage.setItem('HAS_SEEN_ONBOARDING', 'true');
+      setHasSeenOnboarding(true);
+    } catch (err) {
+      console.error('Failed to save onboarding status', err);
+    }
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -78,6 +103,9 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         updateProfile,
+        hasSeenOnboarding,
+        onboardingLoading,
+        completeOnboarding,
       }}
     >
       {children}

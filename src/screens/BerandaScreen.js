@@ -222,7 +222,7 @@ export const BerandaScreen = () => {
       <View style={[styles.header, { height: 88 + insets.top, paddingTop: insets.top }]}>
         <View style={styles.headerTitleContainer}>
           <View style={styles.headerIconBadge}>
-            <MaterialIcons name="agriculture" size={28} color={theme.colors.primary} />
+            <MaterialIcons name="agriculture" size={28} color="#cbffc2" />
           </View>
           <View style={styles.headerTextContainer}>
             <Text style={styles.headerSubtitle}>{(() => {
@@ -243,7 +243,7 @@ export const BerandaScreen = () => {
             onPress={() => setTourVisible(true)}
             style={({ pressed }) => [styles.headerButton, pressed && styles.headerButtonPressed]}
           >
-            <MaterialIcons name="help-outline" size={24} color={theme.colors.primary} />
+            <MaterialIcons name="help-outline" size={24} color="#ffffff" />
           </Pressable>
           <Pressable 
             ref={profileRef}
@@ -253,7 +253,7 @@ export const BerandaScreen = () => {
             {user?.photoUri ? (
               <Image source={{ uri: user.photoUri }} style={styles.headerAvatar} />
             ) : (
-              <MaterialIcons name="person" size={24} color={theme.colors.onSurfaceVariant} />
+              <MaterialIcons name="person" size={24} color="#ffffff" />
             )}
           </Pressable>
         </View>
@@ -497,7 +497,7 @@ const styles = StyleSheet.create({
   },
   // Premium Custom White Header with Rounded Bottom
   header: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#012d1d',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -505,12 +505,12 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 32,
     borderBottomRightRadius: 32,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.8)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
     elevation: 6,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
   },
   headerTitleContainer: {
     flexDirection: 'row',
@@ -520,9 +520,9 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 16,
-    backgroundColor: 'rgba(1, 45, 29, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(1, 45, 29, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.18)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -533,7 +533,7 @@ const styles = StyleSheet.create({
   headerSubtitle: {
     fontFamily: 'PublicSans-Medium',
     fontSize: 13,
-    color: theme.colors.onSurfaceVariant,
+    color: 'rgba(255, 255, 255, 0.7)',
     lineHeight: 16,
     marginBottom: 2,
     fontWeight: '500',
@@ -542,7 +542,7 @@ const styles = StyleSheet.create({
     fontFamily: 'PublicSans-Bold',
     fontSize: 20,
     fontWeight: '700',
-    color: theme.colors.primary,
+    color: '#ffffff',
     lineHeight: 20,
   },
   headerRightContainer: {
@@ -554,14 +554,14 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(1, 45, 29, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(1, 45, 29, 0.1)',
+    borderColor: 'rgba(255, 255, 255, 0.18)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerButtonPressed: {
-    backgroundColor: 'rgba(1, 45, 29, 0.12)',
+    backgroundColor: 'rgba(255, 255, 255, 0.22)',
   },
   headerAvatar: {
     width: 42,

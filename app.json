@@ -4,12 +4,12 @@
     "slug": "e-farmers-purwodadi",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/logo.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/logo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#012d1d"
+      "backgroundColor": "#ffffff"
     },
     "ios": {
       "supportsTablet": true,
@@ -18,8 +18,8 @@
     "android": {
       "package": "com.efarmers.purwodadi",
       "adaptiveIcon": {
-        "backgroundColor": "#012d1d",
-        "foregroundImage": "./assets/logo.png"
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/adaptive-icon-foreground.png"
       }
     },
     "web": {

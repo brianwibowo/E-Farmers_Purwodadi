@@ -7,7 +7,7 @@ let Sharing = null;
 let DocumentPicker = null;
 
 if (Platform.OS !== 'web') {
-  FileSystem = require('expo-file-system');
+  FileSystem = require('expo-file-system/legacy');
   Sharing = require('expo-sharing');
   DocumentPicker = require('expo-document-picker');
 }
@@ -58,7 +58,7 @@ export const exportBackup = async (username) => {
     const filePath = `${FileSystem.cacheDirectory}${namaFile}`;
 
     await FileSystem.writeAsStringAsync(filePath, jsonString, {
-      encoding: FileSystem.EncodingType.UTF8,
+      encoding: 'utf8',
     });
 
     const bisaBagikan = await Sharing.isAvailableAsync();
@@ -126,7 +126,7 @@ export const importBackup = async () => {
       }
 
       jsonString = await FileSystem.readAsStringAsync(asset.uri, {
-        encoding: FileSystem.EncodingType.UTF8,
+        encoding: 'utf8',
       });
     }
 

@@ -120,7 +120,7 @@ export const LupaPasswordScreen = ({ navigation }) => {
 
           <InputField
             label="Username / Nomor HP"
-            placeholder="Masukkan username atau Nomor HP"
+            placeholder="Masukkan username/No. HP"
             value={identifier}
             onChangeText={setIdentifier}
             error={errorIdentifier}
@@ -145,7 +145,7 @@ export const LupaPasswordScreen = ({ navigation }) => {
 
           <InputField
             label="Konfirmasi Kata Sandi Baru"
-            placeholder="Ketik ulang kata sandi baru"
+            placeholder="Ketik ulang Password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             error={errorConfirm}
@@ -207,54 +207,53 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   brandContainer: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 16,
+    marginBottom: 32,
     marginTop: 0,
   },
   logoWrapper: {
-    width: 110,
-    height: 110,
-    borderRadius: 55,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     overflow: 'hidden',
-    marginBottom: 6,
-    elevation: 4,
+    marginRight: 14,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.15,
-    shadowRadius: 4,
+    shadowRadius: 3,
   },
   logo: {
     width: '125%',
     height: '125%',
   },
   brandTextContainer: {
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'center',
   },
   title: {
     fontFamily: 'PublicSans-Bold',
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: theme.colors.onPrimary,
-    lineHeight: 34,
-    textAlign: 'center',
+    lineHeight: 28,
   },
   subtitle: {
     fontFamily: 'PublicSans-SemiBold',
-    fontSize: 15,
+    fontSize: 14,
     color: 'rgba(255,255,255,0.85)',
-    lineHeight: 20,
-    textAlign: 'center',
+    lineHeight: 18,
     marginTop: 2,
   },
   formCard: {
     backgroundColor: theme.colors.surfaceContainerLowest,
     borderRadius: theme.rounded.xl,
-    padding: 24,
+    padding: 20,
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
@@ -265,17 +264,17 @@ const styles = StyleSheet.create({
   },
   formTitle: {
     fontFamily: 'PublicSans-Bold',
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: theme.colors.primary,
-    marginBottom: 8,
+    marginBottom: 6,
   },
   formDesc: {
     fontFamily: 'PublicSans-Regular',
-    fontSize: 14,
+    fontSize: 13,
     color: theme.colors.onSurfaceVariant,
-    lineHeight: 20,
-    marginBottom: 24,
+    lineHeight: 18,
+    marginBottom: 16,
   },
   errorBox: {
     flexDirection: 'row',

@@ -9,8 +9,8 @@ import {
   Image,
   Pressable,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import { useAuth } from '../utils/AuthContext';
 import { theme } from '../theme';
 
 const SLIDES = [
@@ -37,17 +37,13 @@ const SLIDES = [
 export const OnboardingScreen = ({ route }) => {
   const navigation = useNavigation();
   const { width } = useWindowDimensions();
+  const { completeOnboarding } = useAuth();
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const flatListRef = useRef(null);
 
   const handleFinishOnboarding = async () => {
     try {
-      await AsyncStorage.setItem('HAS_SEEN_ONBOARDING', 'true');
-      if (route.params?.onFinish) {
-        route.params.onFinish();
-      } else {
-        navigation.replace('Login');
-      }
+      await completeOnboarding();
     } catch (err) {
       console.error('Failed to save onboarding status', err);
       navigation.replace('Login');

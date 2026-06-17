@@ -103,44 +103,18 @@ export const savePanen = async (panenData) => {
   }
 };
 
-// Seed initial data if storage is empty
+// Seed initial data if storage is empty (disabled for clean database)
 export const seedInitialData = async () => {
+  // Disabling seeding to keep database clean
+};
+
+// Clear all app data from AsyncStorage
+export const clearAllData = async () => {
   try {
-    const expenses = await getExpenses();
-    if (expenses.length === 0) {
-      const initialExpenses = [
-        {
-          id: 'initial-1',
-          tanggal: '2026-02-12',
-          nama_pengeluaran: 'Pupuk NPK',
-          kategori: 'pupuk',
-          nominal: 500000,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: 'initial-2',
-          tanggal: '2026-02-15',
-          nama_pengeluaran: 'Pestisida',
-          kategori: 'pestisida',
-          nominal: 250000,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        },
-        {
-          id: 'initial-3',
-          tanggal: '2026-02-18',
-          nama_pengeluaran: 'Sewa Traktor',
-          kategori: 'sewa',
-          nominal: 1000000,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        }
-      ];
-      await saveExpenses(initialExpenses);
-      await savePanen({ estimasi_hasil_kg: 1000, harga_jual_per_kg: 40000 });
-    }
+    await AsyncStorage.removeItem(EXPENSES_KEY);
+    await AsyncStorage.removeItem(PANEN_KEY);
   } catch (e) {
-    console.error('Error seeding data', e);
+    console.error('Error clearing data from storage', e);
+    throw e;
   }
 };
