@@ -9,6 +9,8 @@ import {
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -18,7 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { theme } from '../theme';
 import { useAuth } from '../utils/AuthContext';
-import { getExpenses, getPanen, savePanen } from '../utils/storage';
+import { getExpenses, getCycles, updateCycleHarvest, archiveCycleBySiklus } from '../utils/storage';
 import FeatureTour from '../components/FeatureTour';
 import {
   calculateTotalPengeluaran,
@@ -30,20 +32,23 @@ import {
 import SummaryCard from '../components/SummaryCard';
 import InputField from '../components/InputField';
 import { formatNominalInput, parseNominalInput } from '../utils/formatNominal';
+import { standardCrops, getCropEmoji, getCropColor } from '../utils/crops';
 
 export const BerandaScreen = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const [expenses, setExpenses] = useState([]);
-  const [panen, setPanen] = useState({ komoditas: '', estimasi_hasil_kg: '', harga_jual_per_kg: '' });
+  const [cycles, setCycles] = useState([]);
+  const [activeCycles, setActiveCycles] = useState([]);
+  const [activeCycleId, setActiveCycleId] = useState('Semua');
   
   // Calculator inputs
-  const [komoditas, setKomoditas] = useState('');
   const [hasilPanen, setHasilPanen] = useState('');
   const [hargaJual, setHargaJual] = useState('');
   const [showResult, setShowResult] = useState(false);
   const [calculatorResult, setCalculatorResult] = useState(0);
+  const [isArchiving, setIsArchiving] = useState(false);
 
   // Tour Refs & State
   const scrollRef = useRef(null);
@@ -109,9 +114,12 @@ export const BerandaScreen = () => {
   // Load data from AsyncStorage
   const loadData = async () => {
     const loadedExpenses = await getExpenses();
-    const loadedPanen = await getPanen();
+    const loadedCycles = await getCycles();
     setExpenses(loadedExpenses);
-    setPanen(loadedPanen);
+    setCycles(loadedCycles);
+    
+    const active = loadedCycles.filter(c => c.status === 'active');
+    setActiveCycles(active);
   };
 
   // Reload when screen is focused
@@ -121,25 +129,37 @@ export const BerandaScreen = () => {
     }, [])
   );
 
-  // Filter expenses for current month and year
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-
   const MONTH_NAMES = [
     'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
     'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
   ];
 
-  const currentMonthExpenses = expenses.filter((exp) => {
-    if (!exp.tanggal) return false;
-    const [y, m] = exp.tanggal.split('-').map(Number);
-    return m - 1 === currentMonth && y === currentYear;
-  });
+  // Filter pengeluaran yang aktif (belum diarsip/tutup buku)
+  const activeExpenses = expenses.filter(exp => !exp.is_archived);
 
-  // Calculate overall figures based on current month
-  const totalPengeluaran = calculateTotalPengeluaran(currentMonthExpenses);
-  const estimasiPendapatan = calculateEstimasiPendapatan(panen);
+  // Filter pengeluaran berdasarkan siklus yang dipilih
+  const filteredExpenses = activeCycleId === 'Semua'
+    ? activeExpenses
+    : activeExpenses.filter(exp => exp.siklusId === activeCycleId);
+
+  // Hitung total pengeluaran aktif
+  const totalPengeluaran = calculateTotalPengeluaran(filteredExpenses);
+
+  // Hitung estimasi pendapatan aktif
+  const estimasiPendapatan = activeCycleId === 'Semua'
+    ? activeCycles.reduce((sum, c) => {
+        const hasil = parseFloat(c.harvestResult) || 0;
+        const harga = parseFloat(c.harvestPrice) || 0;
+        return sum + (hasil * harga);
+      }, 0)
+    : (() => {
+        const c = activeCycles.find(cyc => cyc.id === activeCycleId);
+        if (!c) return 0;
+        const hasil = parseFloat(c.harvestResult) || 0;
+        const harga = parseFloat(c.harvestPrice) || 0;
+        return hasil * harga;
+      })();
+
   const estimasiUntung = calculateUntungRugi(estimasiPendapatan, totalPengeluaran);
   const persentaseKeuntungan = calculatePersentase(estimasiUntung, estimasiPendapatan);
 
@@ -176,10 +196,26 @@ export const BerandaScreen = () => {
 
   const insight = getInsightData(persentaseKeuntungan);
 
+  // Memilih siklus filter
+  const handleSelectCycle = (cycleId) => {
+    setActiveCycleId(cycleId);
+    setShowResult(false);
+    if (cycleId === 'Semua') {
+      setHasilPanen('');
+      setHargaJual('');
+    } else {
+      const cycle = activeCycles.find(c => c.id === cycleId);
+      if (cycle) {
+        setHasilPanen(cycle.harvestResult ? cycle.harvestResult.toString() : '');
+        setHargaJual(cycle.harvestPrice ? formatNominalInput(cycle.harvestPrice.toString()) : '');
+      }
+    }
+  };
+
   // Handle calculator submission
   const handleCalculate = async () => {
-    if (!komoditas.trim()) {
-      alert('Mohon masukkan nama komoditas.');
+    if (activeCycleId === 'Semua') {
+      Alert.alert('Info', 'Silakan pilih salah satu siklus tanam terlebih dahulu.');
       return;
     }
 
@@ -187,30 +223,62 @@ export const BerandaScreen = () => {
     const harga = parseNominalInput(hargaJual) || 0;
 
     if (hasil <= 0 || harga <= 0) {
-      alert('Mohon masukkan jumlah panen dan harga jual yang valid.');
+      Alert.alert('Info', 'Mohon masukkan jumlah panen dan harga jual yang valid.');
       return;
     }
 
-    const newPanen = {
-      komoditas: komoditas.trim(),
-      estimasi_hasil_kg: hasil,
-      harga_jual_per_kg: harga,
-    };
-
-    await savePanen(newPanen);
-    setPanen(newPanen);
+    await updateCycleHarvest(activeCycleId, hasil, harga);
+    
+    // Refresh data
+    await loadData();
     
     const calculatedRevenue = hasil * harga;
     setCalculatorResult(calculatedRevenue);
     setShowResult(true);
+    Alert.alert('Sukses', 'Estimasi hasil panen berhasil diperbarui!');
   };
 
-  const handleReset = () => {
-    setKomoditas('');
+  const handleReset = async () => {
+    if (activeCycleId === 'Semua') return;
+    await updateCycleHarvest(activeCycleId, 0, 0);
+    await loadData();
     setHasilPanen('');
     setHargaJual('');
     setShowResult(false);
     setCalculatorResult(0);
+  };
+
+  const handleArchiveCycle = () => {
+    if (activeCycleId === 'Semua') return;
+    const cycle = activeCycles.find(c => c.id === activeCycleId);
+    if (!cycle) return;
+
+    Alert.alert(
+      'Selesaikan Masa Tanam',
+      `Apakah Anda yakin ingin menyelesaikan masa tanam untuk siklus "${cycle.name}"?\n\nSemua pengeluaran aktif dalam siklus ini akan diarsipkan, dan siklus ini akan dipindahkan ke riwayat pengarsipan.`,
+      [
+        { text: 'Batal', style: 'cancel' },
+        {
+          text: 'Selesaikan & Tutup Buku',
+          style: 'destructive',
+          onPress: async () => {
+            setIsArchiving(true);
+            try {
+              await archiveCycleBySiklus(activeCycleId);
+              Alert.alert('Sukses', `Masa tanam untuk "${cycle.name}" berhasil diselesaikan!\nLaporan siklus telah disimpan ke arsip.`);
+              await loadData();
+              setActiveCycleId('Semua');
+              setShowResult(false);
+            } catch (err) {
+              Alert.alert('Gagal', err.message || 'Gagal mengarsipkan siklus.');
+              console.error(err);
+            } finally {
+              setIsArchiving(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -235,7 +303,7 @@ export const BerandaScreen = () => {
               if (hour >= 15 && hour < 18) return `Selamat Sore, ${username}!`;
               return `Selamat Malam, ${username}!`;
             })()}</Text>
-            <Text style={styles.headerText}>E-Farmers</Text>
+            <Text style={styles.headerText}>WicakTani</Text>
           </View>
         </View>
         <View style={styles.headerRightContainer}>
@@ -250,11 +318,7 @@ export const BerandaScreen = () => {
             onPress={() => navigation.navigate('Profile')}
             style={({ pressed }) => [styles.headerButton, pressed && styles.headerButtonPressed]}
           >
-            {user?.photoUri ? (
-              <Image source={{ uri: user.photoUri }} style={styles.headerAvatar} />
-            ) : (
-              <MaterialIcons name="person" size={24} color="#ffffff" />
-            )}
+            <MaterialIcons name="settings" size={24} color="#ffffff" />
           </Pressable>
         </View>
       </View>
@@ -264,6 +328,39 @@ export const BerandaScreen = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
+        {/* Horizontal Cycle Filter Bar */}
+        {(() => {
+          const cycleOptions = [{ id: 'Semua', name: 'Semua', crop: '' }, ...activeCycles];
+          
+          return (
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.filterScroll}
+              contentContainerStyle={styles.filterScrollContent}
+            >
+              {cycleOptions.map((cycle) => {
+                const isSelected = activeCycleId === cycle.id;
+                const emoji = cycle.id === 'Semua' ? '📊' : getCropEmoji(cycle.crop);
+                return (
+                  <Pressable
+                    key={cycle.id}
+                    onPress={() => handleSelectCycle(cycle.id)}
+                    style={[
+                      styles.filterPill,
+                      isSelected && styles.filterPillSelected
+                    ]}
+                  >
+                    <Text style={styles.filterPillEmoji}>{emoji}</Text>
+                    <Text style={[styles.filterPillText, isSelected && styles.filterPillTextSelected]}>
+                      {cycle.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          );
+        })()}
 
         {/* Bento Grid Summary Section */}
         <View ref={insightRef} style={styles.gridSection}>
@@ -271,7 +368,7 @@ export const BerandaScreen = () => {
           <View style={styles.rowFull}>
             <SummaryCard
               label="Total Pengeluaran"
-              subLabel={`(${MONTH_NAMES[currentMonth]} ${currentYear})`}
+              subLabel={activeCycleId === 'Semua' ? '(Akumulasi Aktif)' : `(Siklus: ${activeCycles.find(c => c.id === activeCycleId)?.name || ''})`}
               value={formatRupiah(totalPengeluaran)}
               icon="payments"
               iconColor={theme.colors.primary}
@@ -283,7 +380,7 @@ export const BerandaScreen = () => {
           <View style={styles.rowHalf}>
             <SummaryCard
               label="Est. Pendapatan"
-              subLabel={`(${MONTH_NAMES[currentMonth]} ${currentYear})`}
+              subLabel={activeCycleId === 'Semua' ? '(Akumulasi Aktif)' : `(Siklus: ${activeCycles.find(c => c.id === activeCycleId)?.name || ''})`}
               value={formatRupiah(estimasiPendapatan)}
               icon="trending-up"
               iconColor={theme.colors.secondary}
@@ -291,7 +388,7 @@ export const BerandaScreen = () => {
             <View style={styles.gap} />
             <SummaryCard
               label="Est. Untung/Rugi"
-              subLabel={`(${MONTH_NAMES[currentMonth]} ${currentYear})`}
+              subLabel={activeCycleId === 'Semua' ? '(Akumulasi Aktif)' : `(Siklus: ${activeCycles.find(c => c.id === activeCycleId)?.name || ''})`}
               value={formatRupiah(estimasiUntung)}
               icon="account-balance-wallet"
               iconColor={estimasiUntung >= 0 ? theme.colors.secondary : theme.colors.error}
@@ -339,124 +436,238 @@ export const BerandaScreen = () => {
           </View>
         </View>
 
-        {/* Harvest Calculator Section */}
-        <View ref={calculatorRef} style={styles.calculatorCard}>
-          <View style={styles.calculatorHeader}>
-            <View style={styles.calculatorIconBadge}>
-              <MaterialIcons name="calculate" size={24} color={theme.colors.onPrimary} />
-            </View>
-            <Text style={styles.calculatorTitle}>Kalkulator Panen</Text>
-          </View>
-          <Text style={styles.calculatorDesc}>Hitung estimasi pendapatan berdasarkan hasil panen dan harga jual.</Text>
-          
-          <InputField
-            label="Komoditas"
-            placeholder="Contoh: Padi"
-            value={komoditas}
-            onChangeText={(text) => {
-              if (text.length > 0) {
-                setKomoditas(text.charAt(0).toUpperCase() + text.slice(1));
-              } else {
-                setKomoditas('');
-              }
-            }}
-            icon="grass"
-            autoCapitalize="sentences"
-          />
-
-          <InputField
-            label="Estimasi Hasil Panen (Kg)"
-            placeholder="Contoh: 1000"
-            value={hasilPanen}
-            onChangeText={setHasilPanen}
-            keyboardType="numeric"
-            icon="eco"
-          />
-          
-          <InputField
-            label="Harga Jual per Kg (Rp)"
-            placeholder="Contoh: 5.000"
-            value={hargaJual}
-            onChangeText={(text) => setHargaJual(formatNominalInput(text))}
-            keyboardType="numeric"
-            icon="sell"
-          />
-
-          <View style={styles.calcButtonsContainer}>
-            <Pressable
-              onPress={handleCalculate}
-              style={({ pressed }) => [
-                styles.calcButton,
-                pressed && styles.calcButtonPressed
-              ]}
-            >
-              <MaterialIcons name="calculate" size={24} color={theme.colors.onPrimary} />
-              <Text style={styles.calcButtonText}>Hitung Sekarang</Text>
-            </Pressable>
-            {showResult ? (
-              <Pressable
-                onPress={handleReset}
-                style={({ pressed }) => [
-                  styles.resetButton,
-                  pressed && styles.resetButtonPressed
-                ]}
-              >
-                <MaterialIcons name="refresh" size={24} color={theme.colors.onSurfaceVariant} />
-                <Text style={styles.resetButtonText}>Reset</Text>
-              </Pressable>
-            ) : null}
-          </View>
-
-          {showResult ? (
-            <View style={styles.resultDisplay}>
-              <View style={styles.resultRow}>
-                <Text style={styles.resultLabel}>Komoditas</Text>
-                <Text style={styles.resultValueText}>{panen.komoditas || komoditas}</Text>
-              </View>
-              <View style={styles.resultDivider} />
-              <View style={styles.resultRow}>
-                <Text style={styles.resultLabel}>Hasil Panen</Text>
-                <Text style={styles.resultValueText}>{parseFloat(hasilPanen).toLocaleString('id-ID')} Kg</Text>
-              </View>
-              <View style={styles.resultDivider} />
-              <View style={styles.resultRow}>
-                <Text style={styles.resultLabel}>Harga Jual</Text>
-                <Text style={styles.resultValueText}>{formatRupiah(parseNominalInput(hargaJual))} / Kg</Text>
-              </View>
-              <View style={styles.resultDivider} />
-              <View style={styles.resultRow}>
-                <Text style={styles.resultLabel}>Estimasi Pendapatan</Text>
-                <Text style={styles.resultValue}>{formatRupiah(calculatorResult)}</Text>
-              </View>
-              <View style={styles.resultDivider} />
-              <View style={styles.resultRow}>
-                <Text style={styles.resultLabel}>Total Pengeluaran</Text>
-                <Text style={[styles.resultValue, { color: theme.colors.error }]}>{formatRupiah(totalPengeluaran)}</Text>
-              </View>
-              <View style={styles.resultDivider} />
-              <View style={styles.resultRow}>
-                <Text style={styles.resultLabel}>Estimasi Keuntungan</Text>
-                <Text style={[styles.resultValue, { color: (calculatorResult - totalPengeluaran) >= 0 ? theme.colors.secondary : theme.colors.error }]}>
-                  {formatRupiah(calculatorResult - totalPengeluaran)}
-                </Text>
-              </View>
-              <View style={styles.resultDivider} />
-              {(() => {
-                const calcPercentage = calculatePersentase(calculatorResult - totalPengeluaran, calculatorResult);
-                const calcInsight = getInsightData(calcPercentage);
+        {/* Breakdown list for "Semua" filter */}
+        {activeCycleId === 'Semua' && (
+          <View style={styles.cropsListSection}>
+            <Text style={styles.sectionTitle}>Ringkasan Lahan Aktif</Text>
+            {(() => {
+              if (activeCycles.length === 0) {
                 return (
-                  <View style={styles.insightTextRow}>
-                    <MaterialIcons name="insights" size={20} color={theme.colors.secondary} style={styles.insightIcon} />
-                    <View style={styles.insightTextContent}>
-                      <Text style={styles.calcInsightTitle}>{calcInsight.title}</Text>
-                      <Text style={styles.calcInsightDesc}>{calcInsight.desc}</Text>
-                    </View>
+                  <View style={styles.emptyCropsCard}>
+                    <MaterialIcons name="eco" size={44} color={theme.colors.outline} />
+                    <Text style={styles.emptyCropsText}>Belum ada siklus tanam yang aktif.</Text>
+                    <Text style={styles.emptyCropsSubtext}>
+                      Mulai catat pengeluaran pertama Anda untuk membuat siklus tanam baru.
+                    </Text>
+                    <Pressable
+                      onPress={() => navigation.navigate('TambahCatatan')}
+                      style={({ pressed }) => [
+                        styles.emptyStateButton,
+                        pressed && styles.pressed
+                      ]}
+                    >
+                      <Text style={styles.emptyStateButtonText}>Mulai Siklus Baru</Text>
+                    </Pressable>
                   </View>
                 );
-              })()}
+              }
+
+              return activeCycles.map((cycle) => {
+                const cycleExpenses = activeExpenses.filter(e => e.siklusId === cycle.id);
+                const cycleTotalExpense = calculateTotalPengeluaran(cycleExpenses);
+                
+                const cycleRevenue = (parseFloat(cycle.harvestResult) || 0) * (parseFloat(cycle.harvestPrice) || 0);
+                const cycleProfit = cycleRevenue - cycleTotalExpense;
+                
+                const cropColor = getCropColor(cycle.crop);
+                const cropEmoji = getCropEmoji(cycle.crop);
+
+                return (
+                  <Pressable
+                    key={cycle.id}
+                    onPress={() => handleSelectCycle(cycle.id)}
+                    style={({ pressed }) => [
+                      styles.cropBreakdownCard,
+                      pressed && styles.cropBreakdownCardPressed
+                    ]}
+                  >
+                    <View style={styles.cropBreakdownHeader}>
+                      <View style={[styles.cropEmojiCircle, { backgroundColor: `${cropColor}15` }]}>
+                        <Text style={styles.cropEmojiText}>{cropEmoji}</Text>
+                      </View>
+                      <View style={styles.cropNameContainer}>
+                        <Text style={styles.cropBreakdownName}>{cycle.name}</Text>
+                        <Text style={styles.cropBreakdownStatus}>Masa Tanam: {cycle.startDate}</Text>
+                      </View>
+                      <MaterialIcons name="chevron-right" size={24} color={theme.colors.onSurfaceVariant} />
+                    </View>
+
+                    <View style={styles.cropBreakdownDivider} />
+
+                    <View style={styles.cropBreakdownBody}>
+                      <View style={styles.cropBreakdownRow}>
+                        <Text style={styles.cropBreakdownLabel}>Total Pengeluaran</Text>
+                        <Text style={[styles.cropBreakdownValue, { color: theme.colors.error }]}>
+                          {formatRupiah(cycleTotalExpense)}
+                        </Text>
+                      </View>
+                      <View style={styles.cropBreakdownRow}>
+                        <Text style={styles.cropBreakdownLabel}>Est. Pendapatan</Text>
+                        <Text style={styles.cropBreakdownValue}>
+                          {formatRupiah(cycleRevenue)}
+                        </Text>
+                      </View>
+                      <View style={styles.cropBreakdownRow}>
+                        <Text style={styles.cropBreakdownLabel}>Est. Untung/Rugi</Text>
+                        <Text style={[
+                          styles.cropBreakdownValue, 
+                          { color: cycleProfit >= 0 ? theme.colors.secondary : theme.colors.error }
+                        ]}>
+                          {formatRupiah(cycleProfit)}
+                        </Text>
+                      </View>
+                    </View>
+                  </Pressable>
+                );
+              });
+            })()}
+          </View>
+        )}
+
+        {/* Harvest Calculator Section (only shown when specific cycle is selected) */}
+        {activeCycleId !== 'Semua' && (() => {
+          const selectedCycle = activeCycles.find(c => c.id === activeCycleId);
+          if (!selectedCycle) return null;
+
+          return (
+            <View ref={calculatorRef} style={styles.calculatorCard}>
+              <View style={styles.calculatorHeader}>
+                <View style={styles.calculatorIconBadge}>
+                  <MaterialIcons name="calculate" size={24} color={theme.colors.onPrimary} />
+                </View>
+                <Text style={styles.calculatorTitle}>Kalkulator Panen ({selectedCycle.name})</Text>
+              </View>
+              <Text style={styles.calculatorDesc}>Hitung dan simpan estimasi hasil panen untuk siklus "{selectedCycle.name}".</Text>
+              
+              <InputField
+                label="Estimasi Hasil Panen (Kg)"
+                placeholder="Contoh: 1000"
+                value={hasilPanen}
+                onChangeText={setHasilPanen}
+                keyboardType="numeric"
+                icon="eco"
+              />
+              
+              <InputField
+                label="Harga Jual per Kg (Rp)"
+                placeholder="Contoh: 5.000"
+                value={hargaJual}
+                onChangeText={(text) => setHargaJual(formatNominalInput(text))}
+                keyboardType="numeric"
+                icon="sell"
+              />
+
+              <View style={styles.calcButtonsContainer}>
+                <Pressable
+                  onPress={handleCalculate}
+                  style={({ pressed }) => [
+                    styles.calcButton,
+                    pressed && styles.calcButtonPressed
+                  ]}
+                >
+                  <MaterialIcons name="save" size={22} color={theme.colors.onPrimary} />
+                  <Text style={styles.calcButtonText}>Hitung & Simpan</Text>
+                </Pressable>
+                {(showResult || (selectedCycle.harvestResult > 0)) ? (
+                  <Pressable
+                    onPress={handleReset}
+                    style={({ pressed }) => [
+                      styles.resetButton,
+                      pressed && styles.resetButtonPressed
+                    ]}
+                  >
+                    <MaterialIcons name="refresh" size={24} color={theme.colors.onSurfaceVariant} />
+                    <Text style={styles.resetButtonText}>Reset</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+
+              {(showResult || (selectedCycle.harvestResult > 0)) ? (
+                <View style={styles.resultDisplay}>
+                  <View style={styles.resultRow}>
+                    <Text style={styles.resultLabel}>Siklus Tanam</Text>
+                    <Text style={styles.resultValueText}>{selectedCycle.name} ({selectedCycle.crop})</Text>
+                  </View>
+                  <View style={styles.resultDivider} />
+                  <View style={styles.resultRow}>
+                    <Text style={styles.resultLabel}>Hasil Panen</Text>
+                    <Text style={styles.resultValueText}>
+                      {parseFloat(hasilPanen || selectedCycle.harvestResult || 0).toLocaleString('id-ID')} Kg
+                    </Text>
+                  </View>
+                  <View style={styles.resultDivider} />
+                  <View style={styles.resultRow}>
+                    <Text style={styles.resultLabel}>Harga Jual</Text>
+                    <Text style={styles.resultValueText}>
+                      {formatRupiah(parseNominalInput(hargaJual) || selectedCycle.harvestPrice || 0)} / Kg
+                    </Text>
+                  </View>
+                  <View style={styles.resultDivider} />
+                  <View style={styles.resultRow}>
+                    <Text style={styles.resultLabel}>Estimasi Pendapatan</Text>
+                    <Text style={styles.resultValue}>{formatRupiah(estimasiPendapatan)}</Text>
+                  </View>
+                  <View style={styles.resultDivider} />
+                  <View style={styles.resultRow}>
+                    <Text style={styles.resultLabel}>Total Pengeluaran</Text>
+                    <Text style={[styles.resultValue, { color: theme.colors.error }]}>{formatRupiah(totalPengeluaran)}</Text>
+                  </View>
+                  <View style={styles.resultDivider} />
+                  <View style={styles.resultRow}>
+                    <Text style={styles.resultLabel}>Estimasi Keuntungan</Text>
+                    <Text style={[styles.resultValue, { color: estimasiUntung >= 0 ? theme.colors.secondary : theme.colors.error }]}>
+                      {formatRupiah(estimasiUntung)}
+                    </Text>
+                  </View>
+                  <View style={styles.resultDivider} />
+                  {(() => {
+                    const calcPercentage = calculatePersentase(estimasiUntung, estimasiPendapatan);
+                    const calcInsight = getInsightData(calcPercentage);
+                    return (
+                      <View style={styles.insightTextRow}>
+                        <MaterialIcons name="insights" size={20} color={theme.colors.secondary} style={styles.insightIcon} />
+                        <View style={styles.insightTextContent}>
+                          <Text style={styles.calcInsightTitle}>{calcInsight.title}</Text>
+                          <Text style={styles.calcInsightDesc}>{calcInsight.desc}</Text>
+                        </View>
+                      </View>
+                    );
+                  })()}
+                </View>
+              ) : null}
             </View>
-          ) : null}
-        </View>
+          );
+        })()}
+
+        {/* Tutup Buku Button */}
+        {activeCycleId !== 'Semua' && (() => {
+          const selectedCycle = activeCycles.find(c => c.id === activeCycleId);
+          if (!selectedCycle) return null;
+          
+          if (totalPengeluaran > 0 || selectedCycle.harvestResult > 0) {
+            return (
+              <Pressable
+                onPress={handleArchiveCycle}
+                disabled={isArchiving}
+                style={({ pressed }) => [
+                  styles.archiveButton,
+                  pressed && styles.archiveButtonPressed,
+                  isArchiving && styles.disabledButton,
+                ]}
+              >
+                {isArchiving ? (
+                  <ActivityIndicator size="small" color="#ffffff" />
+                ) : (
+                  <>
+                    <MaterialIcons name="done-all" size={24} color="#ffffff" />
+                    <Text style={styles.archiveButtonText}>Selesaikan Masa Tanam</Text>
+                  </>
+                )}
+              </Pressable>
+            );
+          }
+          return null;
+        })()}
 
         {/* Banner Illustration */}
         <View style={styles.bannerContainer}>
@@ -467,7 +678,7 @@ export const BerandaScreen = () => {
           >
             <View style={styles.bannerOverlay}>
               <Text style={styles.bannerText}>
-                Pantau terus perkembangan lahan Anda bersama E-Farmers.
+                Pantau terus perkembangan lahan Anda bersama WicakTani.
               </Text>
             </View>
           </ImageBackground>
@@ -881,6 +1092,200 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontWeight: '400',
     opacity: 0.6,
+  },
+  // Crop Filter styles
+  filterScroll: {
+    marginBottom: 16,
+    flexGrow: 0,
+  },
+  filterScrollContent: {
+    paddingRight: 16,
+    gap: 8,
+  },
+  filterPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 44,
+    paddingHorizontal: 16,
+    borderRadius: 22,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+    elevation: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    marginRight: 8,
+  },
+  filterPillSelected: {
+    backgroundColor: '#012d1d',
+    borderColor: '#012d1d',
+  },
+  filterPillEmoji: {
+    fontSize: 16,
+    marginRight: 6,
+  },
+  filterPillText: {
+    fontFamily: 'PublicSans-SemiBold',
+    fontSize: 14,
+    color: '#40493d',
+    fontWeight: '600',
+  },
+  filterPillTextSelected: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
+  
+  // Crop Breakdown Card styles
+  cropsListSection: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontFamily: 'PublicSans-Bold',
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#012d1d',
+    marginBottom: 12,
+  },
+  cropBreakdownCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+    padding: 16,
+    marginBottom: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+  },
+  cropBreakdownCardPressed: {
+    transform: [{ scale: 0.99 }],
+    backgroundColor: '#f5fced',
+  },
+  cropBreakdownHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cropEmojiCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  cropEmojiText: {
+    fontSize: 20,
+  },
+  cropNameContainer: {
+    flex: 1,
+  },
+  cropBreakdownName: {
+    fontFamily: 'PublicSans-Bold',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#171d14',
+  },
+  cropBreakdownStatus: {
+    fontFamily: 'PublicSans-Regular',
+    fontSize: 12,
+    color: '#707a6c',
+  },
+  cropBreakdownDivider: {
+    height: 1,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    marginVertical: 12,
+  },
+  cropBreakdownBody: {
+    gap: 8,
+  },
+  cropBreakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  cropBreakdownLabel: {
+    fontFamily: 'PublicSans-Regular',
+    fontSize: 13,
+    color: '#707a6c',
+  },
+  cropBreakdownValue: {
+    fontFamily: 'PublicSans-SemiBold',
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#171d14',
+  },
+  
+  // Empty crops card
+  emptyCropsCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.08)',
+    padding: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  emptyCropsText: {
+    fontFamily: 'PublicSans-Bold',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#171d14',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  emptyCropsSubtext: {
+    fontFamily: 'PublicSans-Regular',
+    fontSize: 13,
+    color: '#707a6c',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 12,
+  },
+  emptyStateButton: {
+    backgroundColor: theme.colors.primary,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: theme.rounded.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  emptyStateButtonText: {
+    fontFamily: 'PublicSans-Bold',
+    fontSize: 14,
+    color: '#ffffff',
+  },
+  
+  // Archive Button styles
+  archiveButton: {
+    flexDirection: 'row',
+    height: theme.spacing.touchTargetMin,
+    backgroundColor: '#ba1a1a',
+    borderRadius: theme.rounded.lg,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: theme.spacing.stackSpace,
+    elevation: 2,
+    shadowColor: '#ba1a1a',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  archiveButtonPressed: {
+    backgroundColor: '#93000a',
+    transform: [{ scale: 0.98 }],
+  },
+  archiveButtonText: {
+    fontFamily: 'PublicSans-Bold',
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff',
+    marginLeft: 8,
   },
 });
 

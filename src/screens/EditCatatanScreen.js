@@ -16,11 +16,12 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { theme } from '../theme';
-import { getExpenses, updateExpense, deleteExpense } from '../utils/storage';
+import { getExpenses, updateExpense, deleteExpense, getCycles, createCycle } from '../utils/storage';
 import { categories, getCategoryById } from '../utils/categories';
 import InputField from '../components/InputField';
 import { formatNominalInput, parseNominalInput } from '../utils/formatNominal';
 import CalendarModal from '../components/CalendarModal';
+import { standardCrops } from '../utils/crops';
 
 export const EditCatatanScreen = () => {
   const navigation = useNavigation();
@@ -33,10 +34,17 @@ export const EditCatatanScreen = () => {
   const [keteranganLainnya, setKeteranganLainnya] = useState('');
   const [tanggal, setTanggal] = useState('');
   const [nominal, setNominal] = useState('');
+  const [siklusId, setSiklusId] = useState('');
+  const [newCycleCrop, setNewCycleCrop] = useState('Padi');
+  const [newCycleCropLainnya, setNewCycleCropLainnya] = useState('');
+  const [newCycleLahanName, setNewCycleLahanName] = useState('');
+  const [allCycles, setAllCycles] = useState([]);
 
   // UI States
   const [errors, setErrors] = useState({});
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [cropModalVisible, setCropModalVisible] = useState(false);
+  const [cycleModalVisible, setCycleModalVisible] = useState(false);
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -44,8 +52,11 @@ export const EditCatatanScreen = () => {
 
   // Load existing data
   useEffect(() => {
-    const loadExpenseData = async () => {
+    const loadExpenseAndCyclesData = async () => {
       try {
+        const loadedCycles = await getCycles();
+        setAllCycles(loadedCycles);
+
         const expenses = await getExpenses();
         const found = expenses.find(item => item.id === expenseId);
         
@@ -55,6 +66,7 @@ export const EditCatatanScreen = () => {
           setKeteranganLainnya(found.keterangan_lainnya || '');
           setTanggal(found.tanggal);
           setNominal(formatNominalInput(found.nominal.toString()));
+          setSiklusId(found.siklusId || '');
         } else {
           alert('Catatan tidak ditemukan');
           navigation.goBack();
@@ -69,7 +81,7 @@ export const EditCatatanScreen = () => {
     };
 
     if (expenseId) {
-      loadExpenseData();
+      loadExpenseAndCyclesData();
     } else {
       alert('ID Catatan tidak valid');
       navigation.goBack();
@@ -90,6 +102,21 @@ export const EditCatatanScreen = () => {
 
     if (kategori === 'lainnya' && !keteranganLainnya.trim()) {
       newErrors.keteranganLainnya = 'Keterangan kategori lainnya harus diisi';
+    }
+
+    if (!siklusId) {
+      newErrors.siklusId = 'Pilih atau buat siklus tanam';
+    }
+    if (siklusId === 'new') {
+      if (!newCycleCrop) {
+        newErrors.newCycleCrop = 'Pilih jenis tanaman';
+      }
+      if (newCycleCrop === 'Lainnya' && !newCycleCropLainnya.trim()) {
+        newErrors.newCycleCropLainnya = 'Nama tanaman kustom harus diisi';
+      }
+      if (!newCycleLahanName.trim()) {
+        newErrors.newCycleLahanName = 'Nama lahan harus diisi';
+      }
     }
 
     // Date validation YYYY-MM-DD
@@ -124,11 +151,27 @@ export const EditCatatanScreen = () => {
     // Simulate save duration
     setTimeout(async () => {
       try {
+        let finalSiklusId = siklusId;
+        let finalCrop = '';
+
+        if (siklusId === 'new') {
+          const cropVal = newCycleCrop === 'Lainnya' ? newCycleCropLainnya.trim() : newCycleCrop;
+          const nameVal = newCycleLahanName.trim();
+          const newCycle = await createCycle(cropVal, nameVal, tanggal);
+          finalSiklusId = newCycle.id;
+          finalCrop = cropVal;
+        } else {
+          const matchedCycle = allCycles.find(c => c.id === siklusId);
+          finalCrop = matchedCycle ? matchedCycle.crop : 'Padi';
+        }
+
         const updateData = {
           tanggal,
           nama_pengeluaran: nama.trim(),
           kategori,
           nominal: parseNominalInput(nominal),
+          siklusId: finalSiklusId,
+          komoditas: finalCrop,
         };
         if (kategori === 'lainnya' && keteranganLainnya.trim()) {
           updateData.keterangan_lainnya = keteranganLainnya.trim();
@@ -175,6 +218,9 @@ export const EditCatatanScreen = () => {
   };
 
   const selectedCategoryLabel = kategori ? getCategoryById(kategori).label : '';
+  const selectedCycleLabel = siklusId === 'new'
+    ? '[+] Buat Siklus Baru'
+    : (allCycles.find(c => c.id === siklusId)?.name || 'Pilih Siklus Tanam');
 
   if (isLoading) {
     return (
@@ -255,6 +301,57 @@ export const EditCatatanScreen = () => {
                 icon="edit-note"
                 autoCapitalize="sentences"
               />
+            )}
+
+            {/* Input Siklus Tanam Dropdown */}
+            <InputField
+              label="Siklus Tanam"
+              placeholder="Pilih Siklus Tanam"
+              value={selectedCycleLabel}
+              isDropdown={true}
+              onPress={() => setCycleModalVisible(true)}
+              error={errors.siklusId}
+              icon="sync"
+            />
+
+            {/* Inline New Cycle Form */}
+            {siklusId === 'new' && (
+              <View style={{ marginTop: 8 }}>
+                {/* Input Jenis Tanaman */}
+                <InputField
+                  label="Jenis Tanaman (Siklus Baru)"
+                  placeholder="Pilih Jenis Tanaman"
+                  value={newCycleCrop === 'Lainnya' ? (newCycleCropLainnya || 'Lainnya') : newCycleCrop}
+                  isDropdown={true}
+                  onPress={() => setCropModalVisible(true)}
+                  error={errors.newCycleCrop}
+                  icon="grass"
+                />
+
+                {/* Input Tanaman Lainnya (shown when 'Lainnya' selected) */}
+                {newCycleCrop === 'Lainnya' && (
+                  <InputField
+                    label="Nama Tanaman Baru"
+                    placeholder="Contoh: Tomat"
+                    value={newCycleCropLainnya}
+                    onChangeText={(text) => setNewCycleCropLainnya(text)}
+                    error={errors.newCycleCropLainnya}
+                    icon="eco"
+                    autoCapitalize="words"
+                  />
+                )}
+
+                {/* Input Nama Lahan */}
+                <InputField
+                  label="Nama Lahan / Keterangan"
+                  placeholder="Contoh: Lahan Utama, Lahan Belakang"
+                  value={newCycleLahanName}
+                  onChangeText={(text) => setNewCycleLahanName(text)}
+                  error={errors.newCycleLahanName}
+                  icon="map"
+                  autoCapitalize="sentences"
+                />
+              </View>
             )}
 
             {/* Input Tanggal */}
@@ -388,6 +485,120 @@ export const EditCatatanScreen = () => {
 
             <Pressable
               onPress={() => setCategoryModalVisible(false)}
+              style={styles.modalCloseButton}
+            >
+              <Text style={styles.modalCloseButtonText}>Batal</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Cycle Selection Modal */}
+      <Modal
+        visible={cycleModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setCycleModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setCycleModalVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Pilih Siklus Tanam</Text>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Pressable
+                onPress={() => {
+                  setSiklusId('new');
+                  setNewCycleLahanName('Lahan Utama');
+                  setCycleModalVisible(false);
+                }}
+                style={[
+                  styles.modalOption,
+                  siklusId === 'new' && styles.modalOptionSelected,
+                ]}
+              >
+                <MaterialIcons name="add" size={24} color={theme.colors.primary} style={styles.modalOptionIcon} />
+                <Text style={[
+                  styles.modalOptionText,
+                  siklusId === 'new' && styles.modalOptionTextSelected,
+                ]}>
+                  [+] Buat Siklus Baru
+                </Text>
+              </Pressable>
+
+              {allCycles.map((cycle) => (
+                <Pressable
+                  key={cycle.id}
+                  onPress={() => {
+                    setSiklusId(cycle.id);
+                    setCycleModalVisible(false);
+                  }}
+                  style={[
+                    styles.modalOption,
+                    siklusId === cycle.id && styles.modalOptionSelected,
+                  ]}
+                >
+                  <MaterialIcons name="sync" size={24} color={theme.colors.primary} style={styles.modalOptionIcon} />
+                  <Text style={[
+                    styles.modalOptionText,
+                    siklusId === cycle.id && styles.modalOptionTextSelected,
+                  ]}>
+                    {cycle.name} ({cycle.crop}) {cycle.status === 'archived' ? '(Arsip)' : ''}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <Pressable
+              onPress={() => setCycleModalVisible(false)}
+              style={styles.modalCloseButton}
+            >
+              <Text style={styles.modalCloseButtonText}>Batal</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Crop Selection Modal */}
+      <Modal
+        visible={cropModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setCropModalVisible(false)}
+      >
+        <Pressable 
+          style={styles.modalOverlay}
+          onPress={() => setCropModalVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Pilih Jenis Tanaman</Text>
+            
+            {standardCrops.map((crop) => (
+              <Pressable
+                key={crop.id}
+                onPress={() => {
+                  setNewCycleCrop(crop.id);
+                  setCropModalVisible(false);
+                }}
+                style={[
+                  styles.modalOption,
+                  newCycleCrop === crop.id && styles.modalOptionSelected,
+                ]}
+              >
+                <Text style={styles.modalOptionIcon}>{crop.emoji}</Text>
+                <Text style={[
+                  styles.modalOptionText,
+                  newCycleCrop === crop.id && styles.modalOptionTextSelected,
+                ]}>
+                  {crop.label}
+                </Text>
+              </Pressable>
+            ))}
+
+            <Pressable
+              onPress={() => setCropModalVisible(false)}
               style={styles.modalCloseButton}
             >
               <Text style={styles.modalCloseButtonText}>Batal</Text>

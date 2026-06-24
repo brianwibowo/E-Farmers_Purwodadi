@@ -27,7 +27,9 @@ export const ExpenseListItem = ({ expense, onPress }) => {
           {nama_pengeluaran}
         </Text>
         <Text style={styles.subtitle}>
-          {categoryInfo.label}{expense.keterangan_lainnya ? ` — ${expense.keterangan_lainnya}` : ''}
+          {categoryInfo.label}
+          {expense.keterangan_lainnya ? ` — ${expense.keterangan_lainnya}` : ''}
+          {(expense.cycleName || expense.komoditas) ? ` • ${expense.cycleName || expense.komoditas}${expense.is_archived ? ' (Arsip)' : ''}` : ''}
         </Text>
       </View>
 

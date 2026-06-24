@@ -14,6 +14,7 @@ import { AppNavigator } from './src/navigation/AppNavigator';
 import { theme } from './src/theme';
 import { seedInitialData } from './src/utils/storage';
 import { AuthProvider } from './src/utils/AuthContext';
+import { setupNotificationHandler } from './src/utils/notifications';
 
 export default function App() {
   const [dataReady, setDataReady] = useState(false);
@@ -27,6 +28,7 @@ export default function App() {
   useEffect(() => {
     const initApp = async () => {
       try {
+        setupNotificationHandler();
         await seedInitialData();
         // Beri jeda 2 detik agar splash screen logo sempat terlihat
         await new Promise((resolve) => setTimeout(resolve, 2000));

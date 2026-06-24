@@ -101,8 +101,8 @@ export const LupaPasswordScreen = ({ navigation }) => {
             />
           </View>
           <View style={styles.brandTextContainer}>
-            <Text style={styles.title}>E-Farmers</Text>
-            <Text style={styles.subtitle}>Kabupaten Purwodadi</Text>
+            <Text style={styles.title}>WicakTani</Text>
+            <Text style={styles.subtitle}>Wicaksana Ing Cacah Biaya Lan Asil Tani</Text>
           </View>
         </View>
 
@@ -235,6 +235,7 @@ const styles = StyleSheet.create({
   brandTextContainer: {
     alignItems: 'flex-start',
     justifyContent: 'center',
+    flexShrink: 1,
   },
   title: {
     fontFamily: 'PublicSans-Bold',

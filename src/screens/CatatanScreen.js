@@ -25,12 +25,13 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 import { theme } from '../theme';
 import { useAuth } from '../utils/AuthContext';
-import { getExpenses, getPanen } from '../utils/storage';
+import { getExpenses, getPanen, getCycles } from '../utils/storage';
 import { calculateTotalPengeluaran, calculateEstimasiPendapatan, formatRupiah } from '../utils/calculations';
 import { categories } from '../utils/categories';
 import ExpenseListItem from '../components/ExpenseListItem';
 import InputField from '../components/InputField';
 import FAB from '../components/FAB';
+import { standardCrops } from '../utils/crops';
 
 
 // ── Helpers ──
@@ -140,10 +141,12 @@ export const CatatanScreen = () => {
   const [panen, setPanen] = useState({ komoditas: '', estimasi_hasil_kg: '', harga_jual_per_kg: '' });
   const [sections, setSections] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cycles, setCycles] = useState([]);
 
   // Filter state
   const [selectedPeriod, setSelectedPeriod] = useState('this_month');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedSiklusId, setSelectedSiklusId] = useState('all');
   const [customMonth, setCustomMonth] = useState(new Date().getMonth());
   const [customYear, setCustomYear] = useState(new Date().getFullYear());
   const [filterModalVisible, setFilterModalVisible] = useState(false);
@@ -217,6 +220,7 @@ export const CatatanScreen = () => {
   // Temp states for modal (apply on confirm)
   const [tempPeriod, setTempPeriod] = useState('this_month');
   const [tempCategory, setTempCategory] = useState('all');
+  const [tempSiklusId, setTempSiklusId] = useState('all');
   const [tempMonth, setTempMonth] = useState(new Date().getMonth());
   const [tempYear, setTempYear] = useState(new Date().getFullYear());
 
@@ -228,7 +232,7 @@ export const CatatanScreen = () => {
     }));
   };
 
-  const applyAllFilters = (expenses, period, category, cMonth, cYear, query = searchQuery) => {
+  const applyAllFilters = (expenses, period, category, cMonth, cYear, query = searchQuery, siklusId = selectedSiklusId, loadedCycles = cycles) => {
     let result = [...expenses];
 
     // Period filter
@@ -239,16 +243,31 @@ export const CatatanScreen = () => {
       result = result.filter((item) => item.kategori === category);
     }
 
+    // Cycle filter
+    if (siklusId !== 'all') {
+      result = result.filter((item) => item.siklusId === siklusId);
+    }
+
     // Search query filter
     if (query && query.trim() !== '') {
       const q = query.toLowerCase().trim();
       result = result.filter((item) => 
         (item.nama_pengeluaran && item.nama_pengeluaran.toLowerCase().includes(q)) ||
-        (item.kategori && item.kategori.toLowerCase().includes(q))
+        (item.kategori && item.kategori.toLowerCase().includes(q)) ||
+        (item.komoditas && item.komoditas.toLowerCase().includes(q))
       );
     }
 
-    const grouped = groupByDate(result);
+    // Enrich with cycleName
+    const enriched = result.map((exp) => {
+      const cycle = loadedCycles.find(c => c.id === exp.siklusId);
+      return {
+        ...exp,
+        cycleName: cycle ? cycle.name : exp.komoditas || 'Tanpa Siklus',
+      };
+    });
+
+    const grouped = groupByDate(enriched);
     setSections(grouped);
   };
 
@@ -258,11 +277,13 @@ export const CatatanScreen = () => {
     try {
       const loaded = await getExpenses();
       const loadedPanen = await getPanen();
+      const loadedCycles = await getCycles();
       setAllExpenses(loaded);
+      setCycles(loadedCycles);
       if (loadedPanen) {
         setPanen(loadedPanen);
       }
-      applyAllFilters(loaded, selectedPeriod, selectedCategory, customMonth, customYear, searchQuery);
+      applyAllFilters(loaded, selectedPeriod, selectedCategory, customMonth, customYear, searchQuery, selectedSiklusId, loadedCycles);
     } catch (err) {
       console.error('Error loading expenses', err);
     } finally {
@@ -407,7 +428,7 @@ export const CatatanScreen = () => {
   const toggleSearch = () => {
     if (isSearchVisible) {
       setSearchQuery('');
-      applyAllFilters(allExpenses, selectedPeriod, selectedCategory, customMonth, customYear, '');
+      applyAllFilters(allExpenses, selectedPeriod, selectedCategory, customMonth, customYear, '', selectedSiklusId);
     }
     setIsSearchVisible(!isSearchVisible);
   };
@@ -416,6 +437,7 @@ export const CatatanScreen = () => {
     useCallback(() => {
       setSelectedPeriod('this_month');
       setSelectedCategory('all');
+      setSelectedSiklusId('all');
       setCustomMonth(new Date().getMonth());
       setCustomYear(new Date().getFullYear());
       setSearchQuery('');
@@ -426,11 +448,13 @@ export const CatatanScreen = () => {
         try {
           const loaded = await getExpenses();
           const loadedPanen = await getPanen();
+          const loadedCycles = await getCycles();
           setAllExpenses(loaded);
+          setCycles(loadedCycles);
           if (loadedPanen) {
             setPanen(loadedPanen);
           }
-          applyAllFilters(loaded, 'this_month', 'all', new Date().getMonth(), new Date().getFullYear(), '');
+          applyAllFilters(loaded, 'this_month', 'all', new Date().getMonth(), new Date().getFullYear(), '', 'all', loadedCycles);
         } catch (err) {
           console.error('Error loading expenses', err);
         } finally {
@@ -445,6 +469,7 @@ export const CatatanScreen = () => {
   const openFilterModal = () => {
     setTempPeriod(selectedPeriod);
     setTempCategory(selectedCategory);
+    setTempSiklusId(selectedSiklusId);
     setTempMonth(customMonth);
     setTempYear(customYear);
     setFilterModalVisible(true);
@@ -457,10 +482,11 @@ export const CatatanScreen = () => {
 
     setSelectedPeriod(targetPeriod);
     setSelectedCategory(tempCategory);
+    setSelectedSiklusId(tempSiklusId);
     setCustomMonth(tempMonth);
     setCustomYear(tempYear);
     setFilterModalVisible(false);
-    applyAllFilters(allExpenses, targetPeriod, tempCategory, tempMonth, tempYear, searchQuery);
+    applyAllFilters(allExpenses, targetPeriod, tempCategory, tempMonth, tempYear, searchQuery, tempSiklusId);
   };
 
   // Total pengeluaran for the currently visible data
@@ -476,6 +502,7 @@ export const CatatanScreen = () => {
     const currentY = now.getFullYear();
     
     if (selectedCategory !== 'all') return true;
+    if (selectedSiklusId !== 'all') return true;
     if (selectedPeriod === 'this_month') return false;
     if (selectedPeriod === 'custom' && customMonth === currentM && customYear === currentY) return false;
     return true;
@@ -519,6 +546,10 @@ export const CatatanScreen = () => {
     if (selectedCategory !== 'all') {
       const cat = categories.find((c) => c.id === selectedCategory);
       if (cat) parts.push(cat.label);
+    }
+    if (selectedSiklusId !== 'all') {
+      const cycle = cycles.find(c => c.id === selectedSiklusId);
+      if (cycle) parts.push(cycle.name);
     }
     return parts.join(' • ');
   };
@@ -716,7 +747,7 @@ export const CatatanScreen = () => {
               if (hour >= 15 && hour < 18) return `Selamat Sore, ${username}!`;
               return `Selamat Malam, ${username}!`;
             })()}</Text>
-            <Text style={styles.headerText}>E-Farmers</Text>
+            <Text style={styles.headerText}>WicakTani</Text>
           </View>
         </View>
         <View style={styles.headerRightContainer}>
@@ -960,6 +991,65 @@ export const CatatanScreen = () => {
                   ) : null}
                 </Pressable>
               ))}
+
+              {/* ── Section: Siklus Tanam ── */}
+              <View style={styles.modalDivider} />
+              <Text style={styles.modalSectionLabel}>Siklus Tanam</Text>
+
+              <Pressable
+                onPress={() => setTempSiklusId('all')}
+                style={[
+                  styles.modalOption,
+                  tempSiklusId === 'all' && styles.modalOptionSelected,
+                ]}
+              >
+                <MaterialIcons
+                  name="sync"
+                  size={22}
+                  color={tempSiklusId === 'all' ? theme.colors.primary : theme.colors.onSurfaceVariant}
+                  style={styles.modalOptionIcon}
+                />
+                <Text
+                  style={[
+                    styles.modalOptionText,
+                    tempSiklusId === 'all' && styles.modalOptionTextSelected,
+                  ]}
+                >
+                  Semua Siklus
+                </Text>
+                {tempSiklusId === 'all' ? (
+                  <MaterialIcons name="check-circle" size={22} color={theme.colors.primary} />
+                ) : null}
+              </Pressable>
+
+              {cycles.map((cycle) => (
+                <Pressable
+                  key={cycle.id}
+                  onPress={() => setTempSiklusId(cycle.id)}
+                  style={[
+                    styles.modalOption,
+                    tempSiklusId === cycle.id && styles.modalOptionSelected,
+                  ]}
+                >
+                  <MaterialIcons
+                    name="sync"
+                    size={22}
+                    color={tempSiklusId === cycle.id ? theme.colors.primary : theme.colors.onSurfaceVariant}
+                    style={styles.modalOptionIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.modalOptionText,
+                      tempSiklusId === cycle.id && styles.modalOptionTextSelected,
+                    ]}
+                  >
+                    {cycle.name} ({cycle.crop}) {cycle.status === 'archived' ? '(Arsip)' : ''}
+                  </Text>
+                  {tempSiklusId === cycle.id ? (
+                    <MaterialIcons name="check-circle" size={22} color={theme.colors.primary} />
+                  ) : null}
+                </Pressable>
+              ))}
             </ScrollView>
 
             {/* Apply & Close Buttons */}
@@ -977,6 +1067,7 @@ export const CatatanScreen = () => {
                   const now = new Date();
                   setTempPeriod('this_month');
                   setTempCategory('all');
+                  setTempSiklusId('all');
                   setTempMonth(now.getMonth());
                   setTempYear(now.getFullYear());
                 }}

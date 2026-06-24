@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
-import { getExpenses, saveExpenses, getPanen, savePanen } from './storage';
+import { getExpenses, saveExpenses, getPanen, savePanen, getCycles, saveCycles } from './storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Hanya import FileSystem & Sharing di HP (bukan web)
 let FileSystem = null;
@@ -20,10 +21,11 @@ export const exportBackup = async (username) => {
     // Kumpulkan semua data
     const expenses = await getExpenses();
     const panen = await getPanen();
+    const cycles = await getCycles();
 
     const backupData = {
       _meta: {
-        app: 'E-Farmers Purwodadi',
+        app: 'WicakTani',
         versi: '1.0.0',
         tanggal_backup: new Date().toISOString(),
         dibuat_oleh: username || 'pengguna',
@@ -31,6 +33,7 @@ export const exportBackup = async (username) => {
       },
       expenses,
       panen,
+      cycles,
     };
 
     const jsonString = JSON.stringify(backupData, null, 2);
@@ -65,7 +68,7 @@ export const exportBackup = async (username) => {
     if (bisaBagikan) {
       await Sharing.shareAsync(filePath, {
         mimeType: 'application/json',
-        dialogTitle: 'Simpan Backup E-Farmers',
+        dialogTitle: 'Simpan Backup WicakTani',
       });
     }
 
@@ -137,15 +140,15 @@ export const importBackup = async () => {
     } catch (parseErr) {
       return {
         success: false,
-        message: 'File ini bukan file backup yang benar.\nPastikan memilih file backup E-Farmers.',
+        message: 'File ini bukan file backup yang benar.\nPastikan memilih file backup WicakTani.',
       };
     }
 
-    // Pastikan ini file backup E-Farmers
-    if (!backupData._meta || backupData._meta.app !== 'E-Farmers Purwodadi') {
+    // Pastikan ini file backup WicakTani atau E-Farmers
+    if (!backupData._meta || (backupData._meta.app !== 'WicakTani' && backupData._meta.app !== 'E-Farmers Purwodadi')) {
       return {
         success: false,
-        message: 'File ini bukan backup E-Farmers Purwodadi.',
+        message: 'File ini bukan backup WicakTani atau E-Farmers Purwodadi.',
       };
     }
 
@@ -181,10 +184,21 @@ export const importBackup = async () => {
 
     // Pulihkan data panen
     if (backupData.panen) {
-      const p = backupData.panen;
-      if (p.estimasi_hasil_kg || p.harga_jual_per_kg) {
-        await savePanen(p);
+      await savePanen(backupData.panen);
+    }
+
+    // Pulihkan data cycles
+    if (backupData.cycles && Array.isArray(backupData.cycles)) {
+      const existingCycles = await getCycles();
+      const existingIds = new Set(existingCycles.map(c => c.id));
+      const newCycles = [...existingCycles];
+      
+      for (const item of backupData.cycles) {
+        if (!existingIds.has(item.id)) {
+          newCycles.push(item);
+        }
       }
+      await saveCycles(newCycles);
     }
 
     const dilewati = backupData.expenses.length - catatanBaru;

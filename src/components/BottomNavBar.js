@@ -52,11 +52,11 @@ export const BottomNavBar = ({ state, descriptors, navigation }) => {
           };
 
           // Determine icon based on route name
-          let iconName = 'home';
+          let iconName = 'receipt-long';
           if (route.name === 'BerandaTab') {
-            iconName = 'home';
+            iconName = 'bar-chart';
           } else if (route.name === 'CatatanTab') {
-            iconName = 'description';
+            iconName = 'receipt-long';
           }
 
           return (

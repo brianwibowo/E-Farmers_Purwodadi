@@ -16,11 +16,12 @@ import { useNavigation } from '@react-navigation/native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { theme } from '../theme';
-import { addExpense } from '../utils/storage';
+import { addExpense, getCycles, createCycle } from '../utils/storage';
 import { categories, getCategoryById } from '../utils/categories';
 import InputField from '../components/InputField';
 import { formatNominalInput, parseNominalInput } from '../utils/formatNominal';
 import CalendarModal from '../components/CalendarModal';
+import { standardCrops } from '../utils/crops';
 
 export const TambahCatatanScreen = () => {
   const navigation = useNavigation();
@@ -34,15 +35,22 @@ export const TambahCatatanScreen = () => {
       nama: '',
       kategori: '',
       keteranganLainnya: '',
+      siklusId: '',
+      newCycleCrop: 'Padi',
+      newCycleCropLainnya: '',
+      newCycleLahanName: '',
       nominal: '',
       errors: {},
     }
   ]);
   const [activeItemIndex, setActiveItemIndex] = useState(null);
+  const [activeCycles, setActiveCycles] = useState([]);
 
   // UI States
   const [errors, setErrors] = useState({});
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [cropModalVisible, setCropModalVisible] = useState(false);
+  const [cycleModalVisible, setCycleModalVisible] = useState(false);
   const [datePickerVisible, setDatePickerVisible] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -55,6 +63,33 @@ export const TambahCatatanScreen = () => {
     setTanggal(`${year}-${month}-${day}`);
   }, []);
 
+  // Load active cycles
+  const loadCycles = async () => {
+    try {
+      const allCycles = await getCycles();
+      const active = allCycles.filter(c => c.status === 'active');
+      setActiveCycles(active);
+      
+      // Update the initial item's default values based on loaded cycles
+      setItems(prev => prev.map((item, idx) => {
+        if (idx === 0) {
+          return {
+            ...item,
+            siklusId: active.length > 0 ? active[0].id : 'new',
+            newCycleLahanName: active.length > 0 ? '' : 'Lahan Utama',
+          };
+        }
+        return item;
+      }));
+    } catch (err) {
+      console.error('Error loading cycles in TambahCatatanScreen', err);
+    }
+  };
+
+  useEffect(() => {
+    loadCycles();
+  }, []);
+
   const addItem = () => {
     setItems((prev) => [
       ...prev,
@@ -63,6 +98,10 @@ export const TambahCatatanScreen = () => {
         nama: '',
         kategori: '',
         keteranganLainnya: '',
+        siklusId: activeCycles.length > 0 ? activeCycles[0].id : 'new',
+        newCycleCrop: 'Padi',
+        newCycleCropLainnya: '',
+        newCycleLahanName: activeCycles.length > 0 ? '' : 'Lahan Utama',
         nominal: '',
         errors: {},
       }
@@ -112,6 +151,47 @@ export const TambahCatatanScreen = () => {
     }));
   };
 
+  const updateItemKomoditas = (index, cropId) => {
+    setItems((prev) => prev.map((item, idx) => {
+      if (idx === index) {
+        return { ...item, newCycleCrop: cropId };
+      }
+      return item;
+    }));
+  };
+
+  const handleKomoditasLainnyaChange = (index, text) => {
+    setItems((prev) => prev.map((item, idx) => {
+      if (idx === index) {
+        const formatted = text.length > 0 ? text.charAt(0).toUpperCase() + text.slice(1) : '';
+        return { ...item, newCycleCropLainnya: formatted };
+      }
+      return item;
+    }));
+  };
+
+  const handleNewCycleLahanNameChange = (index, text) => {
+    setItems((prev) => prev.map((item, idx) => {
+      if (idx === index) {
+        return { ...item, newCycleLahanName: text };
+      }
+      return item;
+    }));
+  };
+
+  const updateItemSiklus = (index, cycleId) => {
+    setItems((prev) => prev.map((item, idx) => {
+      if (idx === index) {
+        return {
+          ...item,
+          siklusId: cycleId,
+          newCycleLahanName: cycleId === 'new' ? 'Lahan Utama' : '',
+        };
+      }
+      return item;
+    }));
+  };
+
   // Validate form inputs
   const validateForm = () => {
     let isValid = true;
@@ -148,6 +228,24 @@ export const TambahCatatanScreen = () => {
         itemErrors.keteranganLainnya = 'Keterangan kategori lainnya harus diisi';
         isValid = false;
       }
+      if (!item.siklusId) {
+        itemErrors.siklusId = 'Pilih atau buat siklus tanam';
+        isValid = false;
+      }
+      if (item.siklusId === 'new') {
+        if (!item.newCycleCrop) {
+          itemErrors.newCycleCrop = 'Pilih jenis tanaman';
+          isValid = false;
+        }
+        if (item.newCycleCrop === 'Lainnya' && !item.newCycleCropLainnya.trim()) {
+          itemErrors.newCycleCropLainnya = 'Nama tanaman kustom harus diisi';
+          isValid = false;
+        }
+        if (!item.newCycleLahanName.trim()) {
+          itemErrors.newCycleLahanName = 'Nama lahan harus diisi';
+          isValid = false;
+        }
+      }
       const parsedNominal = parseNominalInput(item.nominal);
       if (!item.nominal) {
         itemErrors.nominal = 'Nominal harus diisi';
@@ -170,6 +268,10 @@ export const TambahCatatanScreen = () => {
         nama: '',
         kategori: '',
         keteranganLainnya: '',
+        siklusId: activeCycles.length > 0 ? activeCycles[0].id : 'new',
+        newCycleCrop: 'Padi',
+        newCycleCropLainnya: '',
+        newCycleLahanName: activeCycles.length > 0 ? '' : 'Lahan Utama',
         nominal: '',
         errors: {},
       }
@@ -193,11 +295,27 @@ export const TambahCatatanScreen = () => {
     setTimeout(async () => {
       try {
         for (const item of items) {
+          let finalSiklusId = item.siklusId;
+          let finalCrop = '';
+
+          if (item.siklusId === 'new') {
+            const cropVal = item.newCycleCrop === 'Lainnya' ? item.newCycleCropLainnya.trim() : item.newCycleCrop;
+            const nameVal = item.newCycleLahanName.trim();
+            const newCycle = await createCycle(cropVal, nameVal, tanggal);
+            finalSiklusId = newCycle.id;
+            finalCrop = cropVal;
+          } else {
+            const matchedCycle = activeCycles.find(c => c.id === item.siklusId);
+            finalCrop = matchedCycle ? matchedCycle.crop : 'Padi';
+          }
+
           const expenseData = {
             tanggal,
             nama_pengeluaran: item.nama.trim(),
             kategori: item.kategori,
             nominal: parseNominalInput(item.nominal),
+            siklusId: finalSiklusId,
+            komoditas: finalCrop,
           };
           if (item.kategori === 'lainnya' && item.keteranganLainnya.trim()) {
             expenseData.keterangan_lainnya = item.keteranganLainnya.trim();
@@ -257,6 +375,10 @@ export const TambahCatatanScreen = () => {
           {/* Dynamic Items Cards */}
           {items.map((item, idx) => {
             const selectedCategoryLabel = item.kategori ? getCategoryById(item.kategori).label : '';
+            const selectedCycleLabel = item.siklusId === 'new'
+              ? '[+] Buat Siklus Baru'
+              : (activeCycles.find(c => c.id === item.siklusId)?.name || 'Pilih Siklus Tanam');
+
             return (
               <View key={item.id} style={styles.formCard}>
                 <View style={styles.itemHeader}>
@@ -311,6 +433,63 @@ export const TambahCatatanScreen = () => {
                     icon="edit-note"
                     autoCapitalize="sentences"
                   />
+                )}
+
+                {/* Input Siklus Tanam Dropdown */}
+                <InputField
+                  label="Siklus Tanam"
+                  placeholder="Pilih Siklus Tanam"
+                  value={selectedCycleLabel}
+                  isDropdown={true}
+                  onPress={() => {
+                    setActiveItemIndex(idx);
+                    setCycleModalVisible(true);
+                  }}
+                  error={item.errors?.siklusId}
+                  icon="sync"
+                />
+
+                {/* Form Inline Siklus Baru */}
+                {item.siklusId === 'new' && (
+                  <View style={{ marginTop: 8 }}>
+                    {/* Input Jenis Tanaman */}
+                    <InputField
+                      label="Jenis Tanaman (Siklus Baru)"
+                      placeholder="Pilih Jenis Tanaman"
+                      value={item.newCycleCrop === 'Lainnya' ? (item.newCycleCropLainnya || 'Lainnya') : item.newCycleCrop}
+                      isDropdown={true}
+                      onPress={() => {
+                        setActiveItemIndex(idx);
+                        setCropModalVisible(true);
+                      }}
+                      error={item.errors?.newCycleCrop}
+                      icon="grass"
+                    />
+
+                    {/* Input Tanaman Lainnya (shown when 'Lainnya' selected) */}
+                    {item.newCycleCrop === 'Lainnya' && (
+                      <InputField
+                        label="Nama Tanaman Baru"
+                        placeholder="Contoh: Tomat"
+                        value={item.newCycleCropLainnya}
+                        onChangeText={(text) => handleKomoditasLainnyaChange(idx, text)}
+                        error={item.errors?.newCycleCropLainnya}
+                        icon="eco"
+                        autoCapitalize="words"
+                      />
+                    )}
+
+                    {/* Input Nama Lahan */}
+                    <InputField
+                      label="Nama Lahan / Keterangan"
+                      placeholder="Contoh: Lahan Utama, Lahan Belakang"
+                      value={item.newCycleLahanName}
+                      onChangeText={(text) => handleNewCycleLahanNameChange(idx, text)}
+                      error={item.errors?.newCycleLahanName}
+                      icon="map"
+                      autoCapitalize="sentences"
+                    />
+                  </View>
                 )}
 
                 {/* Input Nominal & Batch Action Row */}
@@ -439,6 +618,125 @@ export const TambahCatatanScreen = () => {
 
             <Pressable
               onPress={() => setCategoryModalVisible(false)}
+              style={styles.modalCloseButton}
+            >
+              <Text style={styles.modalCloseButtonText}>Batal</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Cycle Selection Modal */}
+      <Modal
+        visible={cycleModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setCycleModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setCycleModalVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Pilih Siklus Tanam</Text>
+
+            <ScrollView showsVerticalScrollIndicator={false}>
+              <Pressable
+                onPress={() => {
+                  if (activeItemIndex !== null) {
+                    updateItemSiklus(activeItemIndex, 'new');
+                  }
+                  setCycleModalVisible(false);
+                }}
+                style={[
+                  styles.modalOption,
+                  activeItemIndex !== null && items[activeItemIndex]?.siklusId === 'new' && styles.modalOptionSelected,
+                ]}
+              >
+                <MaterialIcons name="add" size={24} color={theme.colors.primary} style={styles.modalOptionIcon} />
+                <Text style={[
+                  styles.modalOptionText,
+                  activeItemIndex !== null && items[activeItemIndex]?.siklusId === 'new' && styles.modalOptionTextSelected,
+                ]}>
+                  [+] Buat Siklus Baru
+                </Text>
+              </Pressable>
+
+              {activeCycles.map((cycle) => (
+                <Pressable
+                  key={cycle.id}
+                  onPress={() => {
+                    if (activeItemIndex !== null) {
+                      updateItemSiklus(activeItemIndex, cycle.id);
+                    }
+                    setCycleModalVisible(false);
+                  }}
+                  style={[
+                    styles.modalOption,
+                    activeItemIndex !== null && items[activeItemIndex]?.siklusId === cycle.id && styles.modalOptionSelected,
+                  ]}
+                >
+                  <MaterialIcons name="sync" size={24} color={theme.colors.primary} style={styles.modalOptionIcon} />
+                  <Text style={[
+                    styles.modalOptionText,
+                    activeItemIndex !== null && items[activeItemIndex]?.siklusId === cycle.id && styles.modalOptionTextSelected,
+                  ]}>
+                    {cycle.name} ({cycle.crop})
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+
+            <Pressable
+              onPress={() => setCycleModalVisible(false)}
+              style={styles.modalCloseButton}
+            >
+              <Text style={styles.modalCloseButtonText}>Batal</Text>
+            </Pressable>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Crop Selection Modal */}
+      <Modal
+        visible={cropModalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setCropModalVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setCropModalVisible(false)}
+        >
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Pilih Jenis Tanaman</Text>
+
+            {standardCrops.map((crop) => (
+              <Pressable
+                key={crop.id}
+                onPress={() => {
+                  if (activeItemIndex !== null) {
+                    updateItemKomoditas(activeItemIndex, crop.id);
+                  }
+                  setCropModalVisible(false);
+                }}
+                style={[
+                  styles.modalOption,
+                  activeItemIndex !== null && items[activeItemIndex]?.newCycleCrop === crop.id && styles.modalOptionSelected,
+                ]}
+              >
+                <Text style={styles.modalOptionIcon}>{crop.emoji}</Text>
+                <Text style={[
+                  styles.modalOptionText,
+                  activeItemIndex !== null && items[activeItemIndex]?.newCycleCrop === crop.id && styles.modalOptionTextSelected,
+                ]}>
+                  {crop.label}
+                </Text>
+              </Pressable>
+            ))}
+
+            <Pressable
+              onPress={() => setCropModalVisible(false)}
               style={styles.modalCloseButton}
             >
               <Text style={styles.modalCloseButtonText}>Batal</Text>
