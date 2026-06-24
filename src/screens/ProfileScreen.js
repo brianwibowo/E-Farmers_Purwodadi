@@ -13,6 +13,7 @@ import {
   Modal,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 import { useAuth } from '../utils/AuthContext';
@@ -123,7 +124,27 @@ export const ProfileScreen = ({ navigation }) => {
         if (Platform.OS === 'web' && result.assets[0].base64) {
           setPhotoUri(`data:image/jpeg;base64,${result.assets[0].base64}`);
         } else {
-          setPhotoUri(result.assets[0].uri);
+          try {
+            const uri = result.assets[0].uri;
+            const extension = uri.split('.').pop()?.split('?')[0] || 'jpg';
+            const filename = `profile_avatar_${Date.now()}.${extension}`;
+            const destUri = `${FileSystem.documentDirectory}${filename}`;
+            await FileSystem.copyAsync({
+              from: uri,
+              to: destUri
+            });
+            if (photoUri && photoUri.startsWith(FileSystem.documentDirectory)) {
+              try {
+                await FileSystem.deleteAsync(photoUri, { idempotent: true });
+              } catch (e) {
+                console.warn('Failed to delete old avatar file', e);
+              }
+            }
+            setPhotoUri(destUri);
+          } catch (copyErr) {
+            console.error('Failed to copy picked image to permanent storage', copyErr);
+            setPhotoUri(result.assets[0].uri);
+          }
         }
       }
     } catch (err) {
@@ -158,7 +179,27 @@ export const ProfileScreen = ({ navigation }) => {
         if (Platform.OS === 'web' && result.assets[0].base64) {
           setPhotoUri(`data:image/jpeg;base64,${result.assets[0].base64}`);
         } else {
-          setPhotoUri(result.assets[0].uri);
+          try {
+            const uri = result.assets[0].uri;
+            const extension = uri.split('.').pop()?.split('?')[0] || 'jpg';
+            const filename = `profile_avatar_${Date.now()}.${extension}`;
+            const destUri = `${FileSystem.documentDirectory}${filename}`;
+            await FileSystem.copyAsync({
+              from: uri,
+              to: destUri
+            });
+            if (photoUri && photoUri.startsWith(FileSystem.documentDirectory)) {
+              try {
+                await FileSystem.deleteAsync(photoUri, { idempotent: true });
+              } catch (e) {
+                console.warn('Failed to delete old avatar file', e);
+              }
+            }
+            setPhotoUri(destUri);
+          } catch (copyErr) {
+            console.error('Failed to copy taken photo to permanent storage', copyErr);
+            setPhotoUri(result.assets[0].uri);
+          }
         }
       }
     } catch (err) {
@@ -168,8 +209,15 @@ export const ProfileScreen = ({ navigation }) => {
     }
   };
 
-  const handleRemovePhoto = () => {
+  const handleRemovePhoto = async () => {
     setImageModalVisible(false);
+    if (photoUri && Platform.OS !== 'web' && photoUri.startsWith(FileSystem.documentDirectory)) {
+      try {
+        await FileSystem.deleteAsync(photoUri, { idempotent: true });
+      } catch (e) {
+        console.warn('Failed to delete avatar file', e);
+      }
+    }
     setPhotoUri(null);
   };
 
@@ -344,6 +392,8 @@ export const ProfileScreen = ({ navigation }) => {
       );
     }
   };
+
+
 
   return (
     <KeyboardAvoidingView

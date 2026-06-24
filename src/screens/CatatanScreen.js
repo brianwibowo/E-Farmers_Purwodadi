@@ -131,6 +131,16 @@ const PERIOD_OPTIONS = [
   { id: 'this_year', label: 'Tahun Ini', icon: 'calendar-today' },
 ];
 
+// Module-level cache to persist filters across screen transitions and unmounts
+let globalFiltersCache = {
+  selectedPeriod: 'this_month',
+  selectedCategory: 'all',
+  customMonth: new Date().getMonth(),
+  customYear: new Date().getFullYear(),
+  searchQuery: '',
+  selectedSiklusId: 'all',
+};
+
 // ── Component ──
 
 export const CatatanScreen = () => {
@@ -143,16 +153,16 @@ export const CatatanScreen = () => {
   const [loading, setLoading] = useState(true);
   const [cycles, setCycles] = useState([]);
 
-  // Filter state
-  const [selectedPeriod, setSelectedPeriod] = useState('this_month');
-  const [selectedCategory, setSelectedCategory] = useState('all');
-  const [selectedSiklusId, setSelectedSiklusId] = useState('all');
-  const [customMonth, setCustomMonth] = useState(new Date().getMonth());
-  const [customYear, setCustomYear] = useState(new Date().getFullYear());
+  // Filter state (initialized from global cache)
+  const [selectedPeriod, setSelectedPeriod] = useState(globalFiltersCache.selectedPeriod);
+  const [selectedCategory, setSelectedCategory] = useState(globalFiltersCache.selectedCategory);
+  const [selectedSiklusId, setSelectedSiklusId] = useState(globalFiltersCache.selectedSiklusId);
+  const [customMonth, setCustomMonth] = useState(globalFiltersCache.customMonth);
+  const [customYear, setCustomYear] = useState(globalFiltersCache.customYear);
   const [filterModalVisible, setFilterModalVisible] = useState(false);
 
-  // Search state
-  const [searchQuery, setSearchQuery] = useState('');
+  // Search state (initialized from global cache)
+  const [searchQuery, setSearchQuery] = useState(globalFiltersCache.searchQuery);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
   // Collapsed sections state
@@ -164,6 +174,18 @@ export const CatatanScreen = () => {
   const searchToggleRef = useRef(null);
   const fabRef = useRef(null);
   const [tourVisible, setTourVisible] = useState(false);
+
+  // Sync state to global filters cache
+  useEffect(() => {
+    globalFiltersCache = {
+      selectedPeriod,
+      selectedCategory,
+      customMonth,
+      customYear,
+      searchQuery,
+      selectedSiklusId,
+    };
+  }, [selectedPeriod, selectedCategory, customMonth, customYear, searchQuery, selectedSiklusId]);
 
   // Trigger tour if user hasn't seen Catatan tour
   useEffect(() => {
@@ -435,14 +457,6 @@ export const CatatanScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      setSelectedPeriod('this_month');
-      setSelectedCategory('all');
-      setSelectedSiklusId('all');
-      setCustomMonth(new Date().getMonth());
-      setCustomYear(new Date().getFullYear());
-      setSearchQuery('');
-      setIsSearchVisible(false);
-      
       const initLoad = async () => {
         setLoading(true);
         try {
@@ -454,7 +468,15 @@ export const CatatanScreen = () => {
           if (loadedPanen) {
             setPanen(loadedPanen);
           }
-          applyAllFilters(loaded, 'this_month', 'all', new Date().getMonth(), new Date().getFullYear(), '', 'all', loadedCycles);
+          const {
+            selectedPeriod: period,
+            selectedCategory: category,
+            customMonth: cMonth,
+            customYear: cYear,
+            searchQuery: query,
+            selectedSiklusId: cycleId,
+          } = globalFiltersCache;
+          applyAllFilters(loaded, period, category, cMonth, cYear, query, cycleId, loadedCycles);
         } catch (err) {
           console.error('Error loading expenses', err);
         } finally {
@@ -681,10 +703,14 @@ export const CatatanScreen = () => {
             {isFilterActive || searchQuery !== '' ? (
               <Pressable
                 onPress={() => {
+                  const now = new Date();
                   setSelectedPeriod('this_month');
                   setSelectedCategory('all');
+                  setSelectedSiklusId('all');
+                  setCustomMonth(now.getMonth());
+                  setCustomYear(now.getFullYear());
                   setSearchQuery('');
-                  applyAllFilters(allExpenses, 'this_month', 'all', new Date().getMonth(), new Date().getFullYear(), '');
+                  applyAllFilters(allExpenses, 'this_month', 'all', now.getMonth(), now.getFullYear(), '', 'all');
                 }}
                 style={({ pressed }) => [
                   styles.actionIconBadge,

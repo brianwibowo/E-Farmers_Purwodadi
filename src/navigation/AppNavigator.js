@@ -7,6 +7,7 @@ import { theme } from '../theme';
 // Screens
 import BottomTabNavigator from './BottomTabNavigator';
 import TambahCatatanScreen from '../screens/TambahCatatanScreen';
+import TambahTanamanScreen from '../screens/TambahTanamanScreen';
 import EditCatatanScreen from '../screens/EditCatatanScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
@@ -52,6 +53,7 @@ export const AppNavigator = () => {
         // App Stack
         <>
           <Stack.Screen name="MainTabs" component={BottomTabNavigator} />
+          <Stack.Screen name="TambahTanaman" component={TambahTanamanScreen} />
           <Stack.Screen name="TambahCatatan" component={TambahCatatanScreen} />
           <Stack.Screen name="EditCatatan" component={EditCatatanScreen} />
           <Stack.Screen name="Profile" component={ProfileScreen} />

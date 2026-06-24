@@ -322,6 +322,54 @@ export const seedInitialData = async () => {
   }
 };
 
+export const deleteCycleAndExpenses = async (siklusId) => {
+  try {
+    const cycles = await getCycles();
+    const filteredCycles = cycles.filter(c => c.id !== siklusId);
+    await saveCycles(filteredCycles);
+
+    const expenses = await getExpenses();
+    const filteredExpenses = expenses.filter(e => e.siklusId !== siklusId);
+    await saveExpenses(filteredExpenses);
+
+    return true;
+  } catch (e) {
+    console.error('Error deleting cycle and expenses', e);
+    throw e;
+  }
+};
+
+export const updateCycleInfo = async (siklusId, newCrop, newLahan) => {
+  try {
+    const cycles = await getCycles();
+    const cycleIndex = cycles.findIndex(c => c.id === siklusId);
+    if (cycleIndex === -1) throw new Error('Siklus tidak ditemukan');
+
+    const combinedName = `${newCrop} di ${newLahan.trim()}`;
+    cycles[cycleIndex] = {
+      ...cycles[cycleIndex],
+      crop: newCrop,
+      name: combinedName,
+    };
+    await saveCycles(cycles);
+
+    // Also update commodities in related expenses
+    const expenses = await getExpenses();
+    const updatedExpenses = expenses.map(e => {
+      if (e.siklusId === siklusId) {
+        return { ...e, komoditas: newCrop };
+      }
+      return e;
+    });
+    await saveExpenses(updatedExpenses);
+
+    return cycles[cycleIndex];
+  } catch (e) {
+    console.error('Error updating cycle info', e);
+    throw e;
+  }
+};
+
 // Clear all app data from AsyncStorage
 export const clearAllData = async () => {
   try {

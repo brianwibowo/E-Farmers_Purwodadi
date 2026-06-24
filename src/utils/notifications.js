@@ -110,9 +110,9 @@ export const scheduleReminderNotifications = async (frequency) => {
 
     const notificationTitle = "WicakTani";
     const timeTrigger = {
+      type: 'daily',
       hour: 19, // Pukul 19:00 WIB / 7 sore hari
       minute: 0,
-      repeats: true,
     };
 
     if (frequency === 'daily') {
@@ -135,10 +135,10 @@ export const scheduleReminderNotifications = async (frequency) => {
             sound: true,
           },
           trigger: {
+            type: 'weekly',
             weekday: day,
             hour: 19,
             minute: 0,
-            repeats: true,
           },
         });
       }
@@ -151,10 +151,10 @@ export const scheduleReminderNotifications = async (frequency) => {
           sound: true,
         },
         trigger: {
+          type: 'weekly',
           weekday: 7,
           hour: 19,
           minute: 0,
-          repeats: true,
         },
       });
     }

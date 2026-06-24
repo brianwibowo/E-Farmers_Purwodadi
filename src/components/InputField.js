@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, TextInput, Pressable } from 'react-native';
+import { StyleSheet, Text, View, TextInput, Pressable, Alert } from 'react-native';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { theme } from '../theme';
 
@@ -17,6 +17,7 @@ export const InputField = ({
   secureTextEntry = false,
   autoCapitalize = 'none',
   containerStyle,
+  infoMessage,
   ...rest
 }) => {
   const [isFocused, setIsFocused] = useState(false);
@@ -31,7 +32,19 @@ export const InputField = ({
 
   return (
     <View style={[styles.wrapper, containerStyle]}>
-      {label ? <Text style={styles.label}>{label}</Text> : null}
+      {label ? (
+        <View style={styles.labelRow}>
+          <Text style={styles.label}>{label}</Text>
+          {infoMessage ? (
+            <Pressable 
+              onPress={() => Alert.alert('Informasi', infoMessage)}
+              style={({ pressed }) => [styles.infoPressable, pressed && styles.pressed]}
+            >
+              <MaterialIcons name="info-outline" size={18} color="#707a6c" />
+            </Pressable>
+          ) : null}
+        </View>
+      ) : null}
       
       {isDropdown ? (
         <Pressable
@@ -62,10 +75,14 @@ export const InputField = ({
           />
         </Pressable>
       ) : (
-        <View style={[styles.inputContainer, { borderColor, borderWidth }]}>
+        <View style={[
+          styles.inputContainer, 
+          { borderColor, borderWidth },
+          !editable && { backgroundColor: '#f1f3f1', borderColor: 'rgba(0,0,0,0.06)' }
+        ]}>
           {icon && (
-            <View style={styles.iconContainer}>
-              <MaterialIcons name={icon} size={20} color={isFocused ? theme.colors.secondary : theme.colors.onSurfaceVariant} />
+            <View style={[styles.iconContainer, !editable && { backgroundColor: 'rgba(0,0,0,0.04)' }]}>
+              <MaterialIcons name={icon} size={20} color={!editable ? '#707a6c' : isFocused ? theme.colors.secondary : theme.colors.onSurfaceVariant} />
             </View>
           )}
           <TextInput
@@ -79,9 +96,12 @@ export const InputField = ({
             autoCapitalize={autoCapitalize}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
-            style={styles.input}
+            style={[styles.input, !editable && { color: '#707a6c' }]}
             {...rest}
           />
+          {!editable && (
+            <MaterialIcons name="lock-outline" size={18} color="#707a6c" style={{ marginLeft: 8 }} />
+          )}
         </View>
       )}
       
@@ -105,7 +125,17 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
     color: theme.colors.onSurface,
+  },
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
+    width: '100%',
+  },
+  infoPressable: {
+    padding: 4,
+    marginRight: -4,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -146,7 +176,7 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.85,
   },
-  errorRow: {
+   errorRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 6,
@@ -157,6 +187,17 @@ const styles = StyleSheet.create({
     color: theme.colors.error,
     marginLeft: 4,
     fontWeight: '400',
+  },
+  helpRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 4,
+  },
+  helpText: {
+    fontFamily: 'PublicSans-Regular',
+    fontSize: 12,
+    color: '#707a6c',
   },
 });
 

@@ -6,6 +6,14 @@ import { theme } from '../theme';
 
 export const BottomNavBar = ({ state, descriptors, navigation }) => {
   const insets = useSafeAreaInsets();
+
+  // Hide the main bottom tab bar when crop details page is open
+  const berandaRoute = state.routes.find(r => r.name === 'BerandaTab');
+  const isDetailOpen = berandaRoute?.params?.isDetailOpen;
+  if (isDetailOpen) {
+    return null;
+  }
+
   const hasSafeArea = insets.bottom > 0;
   const paddingTop = hasSafeArea ? 6 : 0;
   const paddingBottom = hasSafeArea ? insets.bottom - 6 : 0;
@@ -51,10 +59,9 @@ export const BottomNavBar = ({ state, descriptors, navigation }) => {
             });
           };
 
-          // Determine icon based on route name
           let iconName = 'receipt-long';
           if (route.name === 'BerandaTab') {
-            iconName = 'bar-chart';
+            iconName = 'home';
           } else if (route.name === 'CatatanTab') {
             iconName = 'receipt-long';
           }

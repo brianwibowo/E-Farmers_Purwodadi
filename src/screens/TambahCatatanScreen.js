@@ -23,7 +23,7 @@ import { formatNominalInput, parseNominalInput } from '../utils/formatNominal';
 import CalendarModal from '../components/CalendarModal';
 import { standardCrops } from '../utils/crops';
 
-export const TambahCatatanScreen = () => {
+export const TambahCatatanScreen = ({ route }) => {
   const navigation = useNavigation();
   const scrollRef = useRef(null);
 
@@ -70,13 +70,15 @@ export const TambahCatatanScreen = () => {
       const active = allCycles.filter(c => c.status === 'active');
       setActiveCycles(active);
       
+      const preselectNew = route?.params?.preselectNewCycle;
+      
       // Update the initial item's default values based on loaded cycles
       setItems(prev => prev.map((item, idx) => {
         if (idx === 0) {
           return {
             ...item,
-            siklusId: active.length > 0 ? active[0].id : 'new',
-            newCycleLahanName: active.length > 0 ? '' : 'Lahan Utama',
+            siklusId: (preselectNew || active.length === 0) ? 'new' : active[0].id,
+            newCycleLahanName: (preselectNew || active.length === 0) ? 'Lahan Utama' : '',
           };
         }
         return item;
@@ -301,7 +303,8 @@ export const TambahCatatanScreen = () => {
           if (item.siklusId === 'new') {
             const cropVal = item.newCycleCrop === 'Lainnya' ? item.newCycleCropLainnya.trim() : item.newCycleCrop;
             const nameVal = item.newCycleLahanName.trim();
-            const newCycle = await createCycle(cropVal, nameVal, tanggal);
+            const combinedName = `${cropVal} di ${nameVal}`;
+            const newCycle = await createCycle(cropVal, combinedName, tanggal);
             finalSiklusId = newCycle.id;
             finalCrop = cropVal;
           } else {
@@ -350,7 +353,7 @@ export const TambahCatatanScreen = () => {
       </View>
 
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={styles.keyboardContainer}
       >
         <ScrollView
@@ -481,13 +484,14 @@ export const TambahCatatanScreen = () => {
 
                     {/* Input Nama Lahan */}
                     <InputField
-                      label="Nama Lahan / Keterangan"
+                      label="Nama Lahan / Keterangan (Secondary)"
                       placeholder="Contoh: Lahan Utama, Lahan Belakang"
                       value={item.newCycleLahanName}
                       onChangeText={(text) => handleNewCycleLahanNameChange(idx, text)}
                       error={item.errors?.newCycleLahanName}
                       icon="map"
                       autoCapitalize="sentences"
+                      maxLength={30}
                     />
                   </View>
                 )}

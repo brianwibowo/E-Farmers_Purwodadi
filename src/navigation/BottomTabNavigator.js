@@ -11,17 +11,17 @@ export const BottomTabNavigator = () => {
     <Tab.Navigator
       tabBar={(props) => <BottomNavBar {...props} />}
       screenOptions={{ headerShown: false }}
-      initialRouteName="CatatanTab"
+      initialRouteName="BerandaTab"
     >
-      <Tab.Screen
-        name="CatatanTab"
-        component={CatatanScreen}
-        options={{ title: 'Buku Kas' }}
-      />
       <Tab.Screen
         name="BerandaTab"
         component={BerandaScreen}
-        options={{ title: 'Analisis' }}
+        options={{ title: 'Beranda' }}
+      />
+      <Tab.Screen
+        name="CatatanTab"
+        component={CatatanScreen}
+        options={{ title: 'Catatan' }}
       />
     </Tab.Navigator>
   );
